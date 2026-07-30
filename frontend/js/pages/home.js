@@ -61,9 +61,6 @@ function renderHeroBanner(featuredMovie) {
           <span class="bg-rose-600 text-white text-xs font-extrabold uppercase px-3 py-1 rounded-full shadow-lg shadow-rose-600/40">
             <i class="fa-solid fa-fire mr-1"></i> Phim Nổi Bật
           </span>
-          <span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-            <i class="fa-solid fa-star text-amber-400"></i> ${featuredMovie.rating} / 10
-          </span>
           <span class="text-xs text-slate-300 bg-slate-800/80 px-3 py-1 rounded-full border border-slate-700">
             <i class="fa-regular fa-clock mr-1"></i> ${featuredMovie.duration}
           </span>
@@ -143,9 +140,6 @@ function renderMoviesGrid(movies, container) {
         <div>
           <div class="flex items-center justify-between gap-2 text-xs text-slate-400 mb-1">
             <span class="truncate font-medium text-rose-400">${movie.genreName || 'Phim Chiếu Rạp'}</span>
-            <span class="flex items-center gap-1 font-bold text-amber-400 shrink-0">
-              <i class="fa-solid fa-star text-[10px]"></i> ${movie.rating}
-            </span>
           </div>
           <h3 class="text-base font-bold text-white group-hover:text-rose-400 transition-colors line-clamp-1">
             <a href="movie-detail.html?id=${movie.id}">${movie.title}</a>

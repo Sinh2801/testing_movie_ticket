@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderFooter();
 
   const urlParams = new URLSearchParams(window.location.search);
-  const movieId = urlParams.get('id') || 'm1';
+  const movieId = urlParams.get('id') || 1;
 
   const detailContainer = document.getElementById('movie-detail-container');
   if (!detailContainer) return;
@@ -44,9 +44,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="lg:col-span-4 shrink-0">
               <div class="relative aspect-[2/3] w-full rounded-2xl overflow-hidden shadow-2xl shadow-rose-950/40 border-2 border-slate-700/80 group">
                 <img src="${movie.poster}" alt="${movie.title}" class="w-full h-full object-cover">
-                <div class="absolute top-4 right-4 bg-amber-500 text-slate-950 font-black px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1.5 text-sm">
-                  <i class="fa-solid fa-star"></i> ${movie.rating} / 10
-                </div>
               </div>
             </div>
 

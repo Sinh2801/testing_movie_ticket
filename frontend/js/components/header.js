@@ -94,6 +94,10 @@ export async function renderHeader() {
                       <i class="fa-regular fa-user w-4 text-center"></i>
                       <span>Trang thông tin cá nhân</span>
                     </a>
+                    <a href="admin.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 hover:text-rose-400 transition-colors">
+                      <i class="fa-solid fa-sliders w-4 text-center text-rose-500"></i>
+                      <span>Trang Quản Trị (Admin)</span>
+                    </a>
                   </div>
 
                   <div class="border-t border-slate-800 pt-1">

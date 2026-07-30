@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderFooter();
 
   const urlParams = new URLSearchParams(window.location.search);
-  const movieId = urlParams.get('id') || 'm1';
+  const movieId = urlParams.get('id') || 1;
 
   const movie = await movieService.getMovieDetail(movieId);
   const showtimes = await bookingService.getShowtimes(movieId);

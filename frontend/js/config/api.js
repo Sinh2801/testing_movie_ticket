@@ -1,227 +1,236 @@
 /**
  * Centralized API Configuration & Client Module
- * All API calls across the web application use this module.
+ * Aligned with Spring Boot Backend (com.movieticketbooking)
  */
 
 export const API_CONFIG = {
-  // Configurable base URL for your real backend server
-  BASE_URL: 'https://api.cinebooking.example.com/v1',
+  // Configured to point directly to your Spring Boot REST API
+  BASE_URL: 'http://localhost:8080/api',
   TIMEOUT: 10000,
-  // Set to true to automatically return realistic mock data if backend server is unreachable or offline
+  // Set to true to automatically fallback to Mock Engine if Spring Boot server is unreachable
   ENABLE_MOCK: true
 };
 
 /**
- * Named API Endpoints Registry
+ * Named API Endpoints Registry (Matches Spring Controllers)
  */
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: { method: 'POST', path: '/auth/login' },
     REGISTER: { method: 'POST', path: '/auth/register' },
-    ME: { method: 'GET', path: '/auth/me' },
-    UPDATE_PROFILE: { method: 'PUT', path: '/auth/profile' }
+    ME: { method: 'GET', path: '/auth/me' }
   },
   MOVIES: {
-    GET_LATEST: { method: 'GET', path: '/movies/latest' },
-    GET_GENRES: { method: 'GET', path: '/movies/genres' },
-    SEARCH: { method: 'GET', path: '/movies/search' },
-    GET_BY_GENRE: { method: 'GET', path: '/movies/genre/:genre' },
-    GET_DETAIL: { method: 'GET', path: '/movies/:id' }
+    FILTER: { method: 'GET', path: '/movies/filter' },
+    GET_LATEST: { method: 'GET', path: '/movies/filter' },
+    SEARCH: { method: 'GET', path: '/movies/filter' },
+    GET_BY_GENRE: { method: 'GET', path: '/movies/filter' },
+    GET_DETAIL: { method: 'GET', path: '/movies/movie/:id' },
+    ADD_MOVIE: { method: 'POST', path: '/movies/add' },
+    UPDATE_MOVIE: { method: 'POST', path: '/movies/edit' }
+  },
+  GENRES: {
+    GET_ALL: { method: 'GET', path: '/genres/all' },
+    GET_BY_ID: { method: 'GET', path: '/genres/genre/:id' },
+    ADD_GENRE: { method: 'POST', path: '/genres/add' },
+    UPDATE_GENRE: { method: 'PUT', path: '/genres/edit' }
+  },
+  CINEMAS: {
+    GET_ALL: { method: 'GET', path: '/cinemas/all' },
+    GET_BY_ID: { method: 'GET', path: '/cinemas/cinema/:id' },
+    ADD_CINEMA: { method: 'POST', path: '/cinemas/add' },
+    UPDATE_CINEMA: { method: 'PUT', path: '/cinemas/edit' }
+  },
+  ROOMS: {
+    GET_BY_CINEMA: { method: 'GET', path: '/rooms' },
+    ADD_ROOM: { method: 'POST', path: '/rooms/add' },
+    UPDATE_ROOM: { method: 'PUT', path: '/rooms/update' }
   },
   BOOKING: {
-    GET_SHOWTIMES: { method: 'GET', path: '/movies/:id/showtimes' },
-    GET_SEATS: { method: 'GET', path: '/showtimes/:showtimeId/seats' },
+    GET_SHOWTIMES: { method: 'GET', path: '/movies/movie/:id/showtimes' },
     CREATE_BOOKING: { method: 'POST', path: '/bookings' },
     GET_USER_BOOKINGS: { method: 'GET', path: '/bookings/my-tickets' }
   }
 };
 
 /**
- * Comprehensive Mock Database for seamless offline demo & development
+ * Helper to normalize backend DTOs (MovieResponse) to frontend UI attributes
+ */
+function normalizeMovie(m) {
+  if (!m) return null;
+  const statusMap = {
+    'NOW_SHOWING': 'Đang chiếu',
+    'COMING_SOON': 'Sắp chiếu',
+    'STOPPED_SHOWING': 'Đã ngưng chiếu'
+  };
+
+  return {
+    id: m.id || 'm1',
+    title: m.name || m.title || 'Phim Chiếu Rạp',
+    duration: typeof m.duration === 'number' ? `${m.duration} phút` : (m.duration || '120 phút'),
+    country: m.country || 'Việt Nam',
+    status: statusMap[m.movieStatus] || m.status || 'Đang chiếu',
+    director: m.directorName || m.director || 'Chưa cập nhật',
+    actors: m.actorsName || m.actors || 'Chưa cập nhật',
+    genres: Array.isArray(m.genres) ? m.genres : [],
+    genreName: Array.isArray(m.genres) ? m.genres.join(' / ') : (m.genreName || 'Điện Ảnh'),
+    rating: m.rating || 8.8,
+    poster: m.imageUrl || m.poster || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=800&q=80',
+    banner: m.imageUrl || m.banner || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1600&q=80',
+    description: m.description || 'Nội dung bộ phim đang được cập nhật.'
+  };
+}
+
+/**
+ * Comprehensive Mock Database matching Spring Boot Response structures
  */
 const MOCK_DATA = {
   genres: [
-    { id: 'all', name: 'Tất cả thể loại' },
-    { id: 'action', name: 'Hành Động' },
-    { id: 'sci-fi', name: 'Viễn Tưởng' },
-    { id: 'romance', name: 'Tình Cảm' },
-    { id: 'horror', name: 'Kinh Dị' },
-    { id: 'comedy', name: 'Hài Hước' },
-    { id: 'animation', name: 'Hoạt Hình' },
-    { id: 'drama', name: 'Tâm Lý' }
+    { id: 0, name: 'Tất cả thể loại' },
+    { id: 1, name: 'Hành Động' },
+    { id: 2, name: 'Viễn Tưởng' },
+    { id: 3, name: 'Tình Cảm' },
+    { id: 4, name: 'Kinh Dị' },
+    { id: 5, name: 'Hài Hước' },
+    { id: 6, name: 'Hoạt Hình' },
+    { id: 7, name: 'Tâm Lý' }
   ],
   movies: [
     {
-      id: 'm1',
-      title: 'Avatar: Dòng Dòng Nước (The Way of Water)',
-      duration: '192 phút',
+      id: 1,
+      name: 'Avatar: Dòng Nước (The Way of Water)',
+      duration: 192,
       country: 'Mỹ',
-      status: 'Đang chiếu',
-      director: 'James Cameron',
-      actors: 'Sam Worthington, Zoe Saldaña, Sigourney Weaver, Stephen Lang',
-      genres: ['sci-fi', 'action', 'drama'],
-      genreName: 'Viễn Tưởng / Hành Động',
-      rating: 8.9,
-      poster: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=800&q=80',
-      banner: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1600&q=80',
-      description: 'Lấy bối cảnh hơn một thập kỷ sau các sự kiện của phần phim đầu tiên, bộ phim kể câu chuyện về gia đình Sully, những rắc rối theo sau họ, những nỗ lực họ thực hiện để giữ an toàn cho nhau, những trận chiến họ phải chiến đấu để sinh tồn và những bi kịch họ phải chịu đựng.'
+      movieStatus: 'NOW_SHOWING',
+      directorName: 'James Cameron',
+      actorsName: 'Sam Worthington, Zoe Saldaña, Sigourney Weaver, Stephen Lang',
+      genres: ['Viễn Tưởng', 'Hành Động'],
+      imageUrl: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=800&q=80',
+      description: 'Lấy bối cảnh hơn một thập kỷ sau các sự kiện của phần phim đầu tiên, bộ phim kể câu chuyện về gia đình Sully.'
     },
     {
-      id: 'm2',
-      title: 'Oppenheimer',
-      duration: '180 phút',
+      id: 2,
+      name: 'Oppenheimer',
+      duration: 180,
       country: 'Mỹ / Anh',
-      status: 'Đang chiếu',
-      director: 'Christopher Nolan',
-      actors: 'Cillian Murphy, Emily Blunt, Matt Damon, Robert Downey Jr.',
-      genres: ['drama', 'history'],
-      genreName: 'Tâm Lý / Lịch Sử',
-      rating: 9.1,
-      poster: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=800&q=80',
-      banner: 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=1600&q=80',
-      description: 'Câu chuyện về nhà vật lý lý thuyết J. Robert Oppenheimer, người đứng đầu Phòng thí nghiệm Los Alamos trong Dự án Manhattan thời Chiến tranh thế giới thứ hai, và vai trò của ông trong việc phát triển bom nguyên tử.'
+      movieStatus: 'NOW_SHOWING',
+      directorName: 'Christopher Nolan',
+      actorsName: 'Cillian Murphy, Emily Blunt, Matt Damon, Robert Downey Jr.',
+      genres: ['Tâm Lý', 'Lịch Sử'],
+      imageUrl: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=800&q=80',
+      description: 'Câu chuyện về nhà vật lý lý thuyết J. Robert Oppenheimer, người đứng đầu Dự án Manhattan thời Chiến tranh thế giới thứ hai.'
     },
     {
-      id: 'm3',
-      title: 'Chiến Binh Báo Đen: Wakanda Bất Diệt',
-      duration: '161 phút',
+      id: 3,
+      name: 'Chiến Binh Báo Đen: Wakanda Bất Diệt',
+      duration: 161,
       country: 'Mỹ',
-      status: 'Đang chiếu',
-      director: 'Ryan Coogler',
-      actors: 'Letitia Wright, Lupita Nyong\'o, Danai Gurira, Winston Duke',
-      genres: ['action', 'sci-fi'],
-      genreName: 'Hành Động / Viễn Tưởng',
-      rating: 8.5,
-      poster: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=800&q=80',
-      banner: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1600&q=80',
-      description: 'Nữ hoàng Ramonda, Shuri, M\'Baku, Okoye và Dora Milaje chiến đấu để bảo vệ quốc gia của họ khỏi sự can thiệp của các thế lực thế giới sau cái chết của Vua T\'Challa.'
+      movieStatus: 'NOW_SHOWING',
+      directorName: 'Ryan Coogler',
+      actorsName: 'Letitia Wright, Lupita Nyong\'o, Danai Gurira, Winston Duke',
+      genres: ['Hành Động', 'Viễn Tưởng'],
+      imageUrl: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=800&q=80',
+      description: 'Nữ hoàng Ramonda và Shuri chiến đấu để bảo vệ quốc gia Wakanda khỏi các thế lực can thiệp sau cái chết của Vua T\'Challa.'
     },
     {
-      id: 'm4',
-      title: 'Hành Tinh Khỉ: Vương Quốc Mới',
-      duration: '145 phút',
+      id: 4,
+      name: 'Hành Tinh Khỉ: Vương Quốc Mới',
+      duration: 145,
       country: 'Mỹ',
-      status: 'Đang chiếu',
-      director: 'Wes Ball',
-      actors: 'Owen Teague, Freya Allan, Kevin Durand, Peter Macon',
-      genres: ['sci-fi', 'action'],
-      genreName: 'Viễn Tưởng / Phiêu Lưu',
-      rating: 8.3,
-      poster: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=800&q=80',
-      banner: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1600&q=80',
-      description: 'Nhiều năm sau triều đại của Caesar, một con khỉ trẻ tuổi bước vào một hành trình dẫn dắt anh ta chấm dứt quá khứ và đưa ra những lựa chọn định hình tương lai cho cả loài khỉ và con người.'
+      movieStatus: 'NOW_SHOWING',
+      directorName: 'Wes Ball',
+      actorsName: 'Owen Teague, Freya Allan, Kevin Durand, Peter Macon',
+      genres: ['Viễn Tưởng', 'Hành Động'],
+      imageUrl: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=800&q=80',
+      description: 'Nhiều năm sau triều đại của Caesar, một con khỉ trẻ tuổi bước vào hành trình định hình tương lai loài khỉ.'
     },
     {
-      id: 'm5',
-      title: 'Dune: Hành Tinh Cát - Phần 2',
-      duration: '166 phút',
+      id: 5,
+      name: 'Dune: Hành Tinh Cát - Phần 2',
+      duration: 166,
       country: 'Mỹ / Canada',
-      status: 'Đang chiếu',
-      director: 'Denis Villeneuve',
-      actors: 'Timothée Chalamet, Zendaya, Rebecca Ferguson, Javier Bardem',
-      genres: ['sci-fi', 'action'],
-      genreName: 'Viễn Tưởng / Phiêu Lưu',
-      rating: 9.3,
-      poster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80',
-      banner: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1600&q=80',
-      description: 'Paul Atreides hợp lực với Chani và người Fremen để trả thù những kẻ âm mưu hủy hoại gia đình anh, đối mặt với sự lựa chọn giữa tình yêu của đời mình và số phận của vũ trụ.'
+      movieStatus: 'NOW_SHOWING',
+      directorName: 'Denis Villeneuve',
+      actorsName: 'Timothée Chalamet, Zendaya, Rebecca Ferguson, Javier Bardem',
+      genres: ['Viễn Tưởng', 'Hành Động'],
+      imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80',
+      description: 'Paul Atreides hợp lực với Chani và người Fremen để trả thù những kẻ âm mưu hủy hoại gia đình anh.'
     },
     {
-      id: 'm6',
-      title: 'Chuyến Tàu Băng Giá (Bullet Train)',
-      duration: '126 phút',
+      id: 6,
+      name: 'Chuyến Tàu Băng Giá (Bullet Train)',
+      duration: 126,
       country: 'Mỹ / Nhật Bản',
-      status: 'Đang chiếu',
-      director: 'David Leitch',
-      actors: 'Brad Pitt, Joey King, Aaron Taylor-Johnson, Brian Tyree Henry',
-      genres: ['action', 'comedy'],
-      genreName: 'Hành Động / Hài Hước',
-      rating: 8.0,
-      poster: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=800&q=80',
-      banner: 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=1600&q=80',
-      description: 'Năm sát thủ cùng lên một chiếc tàu siêu tốc di chuyển từ Tokyo đến Morioka và nhận ra những nhiệm vụ của họ không hề độc lập mà có sự kết nối bất ngờ.'
+      movieStatus: 'NOW_SHOWING',
+      directorName: 'David Leitch',
+      actorsName: 'Brad Pitt, Joey King, Aaron Taylor-Johnson',
+      genres: ['Hành Động', 'Hài Hước'],
+      imageUrl: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=800&q=80',
+      description: 'Năm sát thủ cùng lên một chiếc tàu siêu tốc di chuyển từ Tokyo đến Morioka.'
     },
     {
-      id: 'm7',
-      title: 'Chú Thuật Hồi Chiến: Hỏa Ngục (Jujutsu Kaisen 0)',
-      duration: '105 phút',
+      id: 7,
+      name: 'Chú Thuật Hồi Chiến: Hỏa Ngục (Jujutsu Kaisen 0)',
+      duration: 105,
       country: 'Nhật Bản',
-      status: 'Đang chiếu',
-      director: 'Sunghoo Park',
-      actors: 'Megumi Ogata, Kana Hanazawa, Mikako Komatsu, Yuichi Nakamura',
-      genres: ['animation', 'action', 'fantasy'],
-      genreName: 'Hoạt Hình / Giả Tưởng',
-      rating: 8.7,
-      poster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80',
-      banner: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=1600&q=80',
-      description: 'Yuta Okkotsu, một học sinh trung học bị nguyền rủa bởi hồn ma của người bạn thơ ấu Rika, đăng ký học tại Chú Thuật Cao Đẳng Tokyo dưới sự dẫn dắt của Satoru Gojo.'
+      movieStatus: 'NOW_SHOWING',
+      directorName: 'Sunghoo Park',
+      actorsName: 'Megumi Ogata, Kana Hanazawa, Yuichi Nakamura',
+      genres: ['Hoạt Hình', 'Hành Động'],
+      imageUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80',
+      description: 'Yuta Okkotsu đăng ký học tại Chú Thuật Cao Đẳng Tokyo dưới sự dẫn dắt của Satoru Gojo.'
     },
     {
-      id: 'm8',
-      title: 'Quật Mộ Trùng Phùng (Exhuma)',
-      duration: '134 phút',
+      id: 8,
+      name: 'Quật Mộ Trùng Phùng (Exhuma)',
+      duration: 134,
       country: 'Hàn Quốc',
-      status: 'Đang chiếu',
-      director: 'Jang Jae-hyun',
-      actors: 'Choi Min-sik, Kim Go-eun, Yoo Hai-jin, Lee Do-hyun',
-      genres: ['horror', 'drama'],
-      genreName: 'Kinh Dị / Bí Ẩn',
-      rating: 8.8,
-      poster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80',
-      banner: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=1600&q=80',
-      description: 'Sau khi gặp phải hàng loạt sự kiện siêu nhiên kỳ quái, một gia đình giàu có ở Los Angeles đã thuê hai pháp sư trẻ để giải cứu em bé mới sinh của họ.'
+      movieStatus: 'NOW_SHOWING',
+      directorName: 'Jang Jae-hyun',
+      actorsName: 'Choi Min-sik, Kim Go-eun, Lee Do-hyun',
+      genres: ['Kinh Dị', 'Bí Ẩn'],
+      imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80',
+      description: 'Sau khi gặp phải hàng loạt sự kiện siêu nhiên kỳ quái, hai pháp sư trẻ giải cứu em bé mới sinh.'
     },
     {
-      id: 'm9',
-      title: 'Top Gun: Maverick (Phi Công Siêu Đẳng)',
-      duration: '130 phút',
+      id: 9,
+      name: 'Top Gun: Maverick (Phi Công Siêu Đẳng)',
+      duration: 130,
       country: 'Mỹ',
-      status: 'Đang chiếu',
-      director: 'Joseph Kosinski',
-      actors: 'Tom Cruise, Miles Teller, Jennifer Connelly, Jon Hamm',
-      genres: ['action', 'drama'],
-      genreName: 'Hành Động / Kịch Tính',
-      rating: 9.0,
-      poster: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=800&q=80',
-      banner: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1600&q=80',
-      description: 'Sau hơn 30 năm phục vụ với tư cách là một trong những phi công hàng đầu của Hải quân, Pete "Maverick" Mitchell phải huấn luyện một đội phi công trẻ cho một nhiệm vụ nguy hiểm.'
+      movieStatus: 'NOW_SHOWING',
+      directorName: 'Joseph Kosinski',
+      actorsName: 'Tom Cruise, Miles Teller, Jennifer Connelly',
+      genres: ['Hành Động', 'Tâm Lý'],
+      imageUrl: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=800&q=80',
+      description: 'Pete "Maverick" Mitchell phải huấn luyện một đội phi công trẻ cho một nhiệm vụ nguy hiểm.'
     },
     {
-      id: 'm10',
-      title: 'Kẻ Trộm Mặt Trăng 4 (Despicable Me 4)',
-      duration: '94 phút',
+      id: 10,
+      name: 'Kẻ Trộm Mặt Trăng 4 (Despicable Me 4)',
+      duration: 94,
       country: 'Mỹ',
-      status: 'Sắp chiếu',
-      director: 'Chris Renaud',
-      actors: 'Steve Carell, Kristen Wiig, Will Ferrell, Sofia Vergara',
-      genres: ['animation', 'comedy'],
-      genreName: 'Hoạt Hình / Hài Hước',
-      rating: 8.2,
-      poster: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=800&q=80',
-      banner: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=1600&q=80',
-      description: 'Gru và các Minion trở lại trong cuộc phiêu lưu mới đầy tiếng cười khi gia đình nhỏ chào đón thành viên Gru Jr., đồng thời đối mặt với kẻ thù mới nguy hiểm.'
+      movieStatus: 'COMING_SOON',
+      directorName: 'Chris Renaud',
+      actorsName: 'Steve Carell, Kristen Wiig, Will Ferrell',
+      genres: ['Hoạt Hình', 'Hài Hước'],
+      imageUrl: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=800&q=80',
+      description: 'Gru và các Minion trở lại trong cuộc phiêu lưu mới đầy tiếng cười.'
     }
   ]
 };
 
 /**
  * Universal API Dispatcher Helper
- * @param {Object} endpoint - Endpoint object from API_ENDPOINTS (e.g. API_ENDPOINTS.MOVIES.GET_LATEST)
- * @param {Object} options - Options containing params, query, body, headers
- * @returns {Promise<Object>} Response data
  */
 export async function apiCall(endpoint, { params = {}, query = {}, body = null, headers = {} } = {}) {
-  // Construct URL by replacing dynamic parameters (e.g., :id, :genre)
   let path = endpoint.path;
   Object.keys(params).forEach(key => {
     path = path.replace(`:${key}`, encodeURIComponent(params[key]));
   });
 
-  // Append query strings if present
   const queryString = new URLSearchParams(query).toString();
   const fullUrl = `${API_CONFIG.BASE_URL}${path}${queryString ? `?${queryString}` : ''}`;
 
-  // Attach auth token if available
   const token = localStorage.getItem('cine_token');
   const requestHeaders = {
     'Content-Type': 'application/json',
@@ -230,98 +239,107 @@ export async function apiCall(endpoint, { params = {}, query = {}, body = null, 
   };
 
   try {
-    if (!API_CONFIG.ENABLE_MOCK) {
-      const response = await fetch(fullUrl, {
-        method: endpoint.method,
-        headers: requestHeaders,
-        body: body ? JSON.stringify(body) : null
-      });
+    const response = await fetch(fullUrl, {
+      method: endpoint.method,
+      headers: requestHeaders,
+      body: body ? JSON.stringify(body) : null
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Lỗi API HTTP (${response.status})`);
+    if (response.ok) {
+      const json = await response.json();
+      
+      // Handle Spring Boot ApiResponse wrapper: { message: "...", data: ... }
+      const rawData = json.data !== undefined ? json.data : json;
+
+      // Handle PagedResponse wrapper: { content: [...], pageNumber: 1, ... }
+      if (rawData && rawData.content && Array.isArray(rawData.content)) {
+        return {
+          success: true,
+          message: json.message || 'Success',
+          data: rawData.content.map(normalizeMovie)
+        };
       }
 
-      return await response.json();
+      // Handle Single Movie object
+      if (rawData && (rawData.name || rawData.title)) {
+        return {
+          success: true,
+          message: json.message || 'Success',
+          data: normalizeMovie(rawData)
+        };
+      }
+
+      // Handle List of items (e.g. Genres or Cinemas)
+      if (Array.isArray(rawData)) {
+        return {
+          success: true,
+          message: json.message || 'Success',
+          data: rawData
+        };
+      }
+
+      return { success: true, message: json.message || 'Success', data: rawData };
     }
   } catch (error) {
-    console.warn(`[API Notice] Request to real endpoint failed or mock mode enabled. Using Mock Engine. Endpoint: ${path}`, error);
+    if (!API_CONFIG.ENABLE_MOCK) {
+      throw error;
+    }
+    console.warn(`[API Notice] Request to Spring Boot backend failed (${fullUrl}). Using Mock Engine.`, error);
   }
 
-  // --- MOCK ENGINE FALLBACK ---
-  await new Promise(res => setTimeout(res, 200)); // Simulate realistic network delay
+  // --- MOCK ENGINE FALLBACK (Aligned with Spring Boot DTOs) ---
+  await new Promise(res => setTimeout(res, 150));
 
   // Auth Mocks
   if (endpoint.path === API_ENDPOINTS.AUTH.LOGIN.path) {
     const { email, password } = body || {};
-    if (!email || !password) throw new Error('Vui lòng nhập Email và Mật khẩu');
     const mockUser = {
-      id: 'u_' + Date.now(),
-      username: email.split('@')[0],
-      email: email,
-      phone: '0988776655',
+      id: 1,
+      username: (email || 'user').split('@')[0],
+      email: email || 'user@example.com',
+      phoneNumber: '0988776655',
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`
     };
-    return {
-      success: true,
-      token: 'mock_jwt_token_' + Date.now(),
-      user: mockUser
-    };
+    return { success: true, token: 'mock_jwt_token_123', user: mockUser };
   }
 
   if (endpoint.path === API_ENDPOINTS.AUTH.REGISTER.path) {
-    const { username, email, password, phone } = body || {};
-    if (!username || !email || !password || !phone) {
-      throw new Error('Vui lòng điền đầy đủ tất cả các trường đăng ký');
-    }
+    const { username, email, phone } = body || {};
     const mockUser = {
-      id: 'u_' + Date.now(),
-      username,
-      email,
-      phone,
+      id: 2,
+      username: username || 'newuser',
+      email: email || 'new@example.com',
+      phoneNumber: phone || '0912345678',
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`
     };
-    return {
-      success: true,
-      token: 'mock_jwt_token_' + Date.now(),
-      user: mockUser
-    };
+    return { success: true, token: 'mock_jwt_token_456', user: mockUser };
   }
 
-  if (endpoint.path === API_ENDPOINTS.AUTH.ME.path) {
-    const userStr = localStorage.getItem('cine_user');
-    if (!userStr) throw new Error('Chưa đăng nhập');
-    return { success: true, user: JSON.parse(userStr) };
+  // Movies Filter & Search Mocks
+  if (endpoint.path === API_ENDPOINTS.MOVIES.FILTER.path) {
+    let list = [...MOCK_DATA.movies];
+    if (query.name) {
+      list = list.filter(m => m.name.toLowerCase().includes(query.name.toLowerCase()));
+    }
+    if (query.movieStatus) {
+      list = list.filter(m => m.movieStatus === query.movieStatus);
+    }
+    return { success: true, data: list.map(normalizeMovie) };
   }
 
-  // Movie Mocks
-  if (endpoint.path === API_ENDPOINTS.MOVIES.GET_LATEST.path) {
-    return { success: true, data: MOCK_DATA.movies.slice(0, 10) };
+  // Movie Detail Mock
+  if (endpoint.path === API_ENDPOINTS.MOVIES.GET_DETAIL.path) {
+    const targetId = parseInt(params.id) || 1;
+    const movie = MOCK_DATA.movies.find(m => m.id === targetId) || MOCK_DATA.movies[0];
+    return { success: true, data: normalizeMovie(movie) };
   }
 
-  if (endpoint.path === API_ENDPOINTS.MOVIES.GET_GENRES.path) {
+  // Genres Mock
+  if (endpoint.path === API_ENDPOINTS.GENRES.GET_ALL.path) {
     return { success: true, data: MOCK_DATA.genres };
   }
 
-  if (endpoint.path === API_ENDPOINTS.MOVIES.GET_DETAIL.path) {
-    const movie = MOCK_DATA.movies.find(m => m.id === params.id) || MOCK_DATA.movies[0];
-    return { success: true, data: movie };
-  }
-
-  if (endpoint.path === API_ENDPOINTS.MOVIES.SEARCH.path) {
-    const keyword = (query.q || '').toLowerCase();
-    const filtered = MOCK_DATA.movies.filter(m => m.title.toLowerCase().includes(keyword));
-    return { success: true, data: filtered };
-  }
-
-  if (endpoint.path === API_ENDPOINTS.MOVIES.GET_BY_GENRE.path) {
-    const genre = params.genre;
-    if (genre === 'all' || !genre) return { success: true, data: MOCK_DATA.movies };
-    const filtered = MOCK_DATA.movies.filter(m => m.genres.includes(genre));
-    return { success: true, data: filtered };
-  }
-
-  // Booking Mocks
+  // Showtimes & Booking Mocks
   if (endpoint.path === API_ENDPOINTS.BOOKING.GET_SHOWTIMES.path) {
     return {
       success: true,
