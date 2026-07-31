@@ -19,11 +19,11 @@ public class RoomController {
     private final RoomService roomService;
 
     // Get rooms by cinema id
-    @GetMapping
-    public ResponseEntity<ApiResponse> getByCinemaId(@RequestParam int cinemaId)
+    @GetMapping("/movie/{id}")
+    public ResponseEntity<ApiResponse> getByCinemaId(@PathVariable int id)
     {
         try {
-            List<RoomResponse> rooms = roomService.findByCinemaId(cinemaId);
+            List<RoomResponse> rooms = roomService.findByCinemaId(id);
             return ResponseEntity.ok()
                     .body(new ApiResponse("Get room success", rooms));
         } catch (RuntimeException e) {
