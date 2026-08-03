@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "ticket_seats")
 public class TicketSeat {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,6 +26,5 @@ public class TicketSeat {
     private ShowTimeSeat showTimeSeat;
 
     private LocalDateTime createdAt;
-
     private LocalDateTime cancelledAt;
 }

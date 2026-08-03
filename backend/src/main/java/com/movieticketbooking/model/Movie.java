@@ -23,6 +23,7 @@ public class Movie {
 	private String actorsName;
 	private String description;
 	private int duration;
+	private double rating;
 	private String country;
 	private String imageUrl;
 	@ManyToMany
@@ -33,6 +34,6 @@ public class Movie {
 	)
 	private List<Genre> genres;
 	private MovieStatus movieStatus;
-	private LocalDateTime startAt;
+	private LocalDateTime showAt; // ngày bắt đầu chiếu
 	private LocalDateTime createdAt;
 }

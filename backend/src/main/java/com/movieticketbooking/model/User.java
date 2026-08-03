@@ -24,8 +24,8 @@ public class User implements UserDetails {
 	private String password;
 	private String email;
 	private String phoneNumber;
+	@Enumerated(EnumType.STRING)
 	private Role role;
-	private List<Ticket> tickets;
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {

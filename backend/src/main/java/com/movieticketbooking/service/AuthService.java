@@ -1,4 +1,4 @@
-package com.movieticketbooking.service.impl;
+package com.movieticketbooking.service;
 
 import com.movieticketbooking.request.auth.LoginRequest;
 import com.movieticketbooking.request.auth.RegisterRequest;

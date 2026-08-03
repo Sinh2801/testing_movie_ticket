@@ -14,11 +14,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "payments")
 public class Payment {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-
     private String uid;
 
     @OneToOne(fetch = FetchType.LAZY)
@@ -35,12 +33,8 @@ public class Payment {
     private PaymentStatus status;
 
     private String transactionId;
-
     private String responseCode;
-
     private LocalDateTime paidAt;
-
     private LocalDateTime createdAt;
-
     private LocalDateTime updatedAt;
 }

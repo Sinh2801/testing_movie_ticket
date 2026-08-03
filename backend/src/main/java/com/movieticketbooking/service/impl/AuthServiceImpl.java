@@ -8,7 +8,7 @@ import com.movieticketbooking.repository.UserRepository;
 import com.movieticketbooking.request.auth.LoginRequest;
 import com.movieticketbooking.request.auth.RegisterRequest;
 import com.movieticketbooking.response.AuthResponse;
-import com.movieticketbooking.service.UserService;
+import com.movieticketbooking.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

@@ -2,11 +2,15 @@ package com.movieticketbooking.repository;
 
 import com.movieticketbooking.model.Movie;
 import com.movieticketbooking.model.MovieStatus;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import java.util.Optional;
 
 public interface MovieRepository extends BaseRepository<Movie, Integer> {
     @Query("""
@@ -25,4 +29,8 @@ public interface MovieRepository extends BaseRepository<Movie, Integer> {
             @Param("country") String country,
             Pageable pageable
     );
+
+    @EntityGraph(attributePaths = "genres")
+    @Override
+    Optional<Movie> findById(Integer integer);
 }

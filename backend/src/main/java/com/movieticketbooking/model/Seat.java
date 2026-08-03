@@ -20,5 +20,4 @@ public class Seat {
     private Room room;
     @Enumerated(EnumType.STRING)
     private SeatType type;
-
 }
