@@ -25,5 +25,5 @@ public class UpdateMovieRequest {
     private String imageUrl;
     @NotBlank
     private MovieStatus movieStatus;
-    private LocalDateTime startAt;
+    private LocalDateTime showAt;
 }

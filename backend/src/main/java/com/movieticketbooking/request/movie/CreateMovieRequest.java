@@ -31,5 +31,5 @@ public class CreateMovieRequest {
     private List<Short> genres;
     @NotBlank
     private MovieStatus movieStatus;
-    private LocalDateTime startAt;
+    private LocalDateTime showAt;
 }

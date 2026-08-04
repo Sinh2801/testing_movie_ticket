@@ -16,8 +16,9 @@ public class MovieResponse {
     private int duration;
     private String country;
     private String imageUrl;
+    private double rating;
     private List<String> genres;
     private MovieStatus movieStatus;
-    private LocalDateTime startAt;
+    private LocalDateTime showAt;
     private LocalDateTime createdAt;
 }

@@ -33,16 +33,15 @@ public class MovieServiceImpl implements MovieService {
 
     // Filter movie by name, genre, movie status, country
     @Override
-    public PagedResponse<MovieResponse> filter
-            (int page,
-             int size,
-             String name,
-             short genreId,
-             MovieStatus movieStatus,
-             String country)
-    {
+    public PagedResponse<MovieResponse> filter(int page,
+            int size,
+            String name,
+            short genreId,
+            MovieStatus movieStatus,
+            String country) {
         Genre genre = genreService.findGenreById(genreId);
-        if (genre == null) throw new ResourceNotFoundException("Genre not found");
+        if (genre == null)
+            throw new ResourceNotFoundException("Genre not found");
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date"));
         Page<Movie> moviePage = movieRepository.filter(name, genreId, movieStatus, country, pageable);
@@ -52,24 +51,22 @@ public class MovieServiceImpl implements MovieService {
 
     // Find movie by id
     @Override
-    public Movie findMovieById(int id)
-    {
+    public Movie findMovieById(int id) {
         Optional<Movie> movie = movieRepository.findById(id);
-        if(movie.isEmpty()) throw new ResourceNotFoundException("Movie not found");
+        if (movie.isEmpty())
+            throw new ResourceNotFoundException("Movie not found");
         return movie.get();
     }
 
     // Get movie by id
     @Override
-    public MovieResponse getMovieById(int id)
-    {
+    public MovieResponse getMovieById(int id) {
         return toResponse(findMovieById(id));
     }
 
     // Add new movie
     @Override
-    public MovieResponse addMovie(CreateMovieRequest request)
-    {
+    public MovieResponse addMovie(CreateMovieRequest request) {
         Movie movie = new Movie();
         movie.setName(request.getName());
         movie.setDirectorName(request.getDirectorName());
@@ -83,7 +80,7 @@ public class MovieServiceImpl implements MovieService {
                 .map(genreService::findGenreById)
                 .toList();
         movie.setGenres(genres);
-        movie.setStartAt(request.getStartAt());
+        movie.setShowAt(request.getShowAt());
         movie.setCreatedAt(LocalDateTime.now());
 
         Movie saved = movieRepository.save(movie);
@@ -92,10 +89,10 @@ public class MovieServiceImpl implements MovieService {
 
     // update movie
     @Override
-    public MovieResponse updateMovie(UpdateMovieRequest request)
-    {
+    public MovieResponse updateMovie(UpdateMovieRequest request) {
         Optional<Movie> opt = movieRepository.findById(request.getId());
-        if(opt.isEmpty()) throw new ResourceNotFoundException("Movie not found");
+        if (opt.isEmpty())
+            throw new ResourceNotFoundException("Movie not found");
 
         Movie movie = opt.get();
         movie.setName(request.getName());
@@ -105,15 +102,14 @@ public class MovieServiceImpl implements MovieService {
         movie.setDuration(request.getDuration());
         movie.setCountry(request.getCountry());
         movie.setImageUrl(request.getImageUrl());
-        movie.setStartAt(request.getStartAt());
+        movie.setShowAt(request.getShowAt());
 
         Movie saved = movieRepository.save(movie);
         return toResponse(saved);
     }
 
     // mapper
-    private MovieResponse toResponse(Movie movie)
-    {
+    private MovieResponse toResponse(Movie movie) {
         MovieResponse movieResponse = new MovieResponse();
         movieResponse.setId(movie.getId());
         movieResponse.setName(movie.getName());
@@ -123,10 +119,11 @@ public class MovieServiceImpl implements MovieService {
         movieResponse.setDuration(movie.getDuration());
         movieResponse.setCountry(movie.getCountry());
         movieResponse.setImageUrl(movie.getImageUrl());
+        movieResponse.setRating(movie.getRating());
         List<String> genres = movie.getGenres().stream()
                 .map(Genre::getName).toList();
         movieResponse.setGenres(genres);
-        movieResponse.setStartAt(movie.getStartAt());
+        movieResponse.setShowAt(movie.getShowAt());
         movieResponse.setCreatedAt(movie.getCreatedAt());
         return movieResponse;
     }

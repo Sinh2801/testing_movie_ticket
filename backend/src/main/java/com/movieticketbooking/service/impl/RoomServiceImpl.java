@@ -31,22 +31,21 @@ public class RoomServiceImpl implements RoomService {
     @Override
     public Room findRoomById(int id) {
         Optional<Room> opt = roomRepository.findById(id);
-        if(opt.isEmpty())
+        if (opt.isEmpty())
             throw new ResourceNotFoundException("Room not found");
-        return opt.get()
+        return opt.get();
     }
 
     // Get room by id and convert to response (for web)
     @Override
-    public RoomResponse getRoomById(int id)
-    {
+    public RoomResponse getRoomById(int id) {
         return toResponse(findRoomById(id));
     }
 
     // Get rooms by cinema id
     @Override
     public List<RoomResponse> findByCinemaId(int cinemaId) {
-        Cinema cinema = cinemaService.getCinemaById(cinemaId);
+        Cinema cinema = cinemaService.findCinemaById(cinemaId);
         List<Room> rooms = roomRepository.findByCinema(cinema);
         return rooms.stream().map(this::toResponse).collect(Collectors.toList());
     }
@@ -54,9 +53,8 @@ public class RoomServiceImpl implements RoomService {
     // Create room and it's seats
     @Transactional
     @Override
-    public RoomResponse createRoom(CreateRoomRequest request)
-    {
-        Cinema cinema = cinemaService.getCinemaById(request.getCinemaId());
+    public RoomResponse createRoom(CreateRoomRequest request) {
+        Cinema cinema = cinemaService.findCinemaById(request.getCinemaId());
         Room room = new Room();
         room.setCinema(cinema);
         room.setName(request.getName());
@@ -72,10 +70,9 @@ public class RoomServiceImpl implements RoomService {
 
     // Update infor of room (not update seat)
     @Override
-    public RoomResponse updateRoom(UpdateRoomRequest request)
-    {
+    public RoomResponse updateRoom(UpdateRoomRequest request) {
         Optional<Room> opt = roomRepository.findById(request.getId());
-        if(opt.isEmpty())
+        if (opt.isEmpty())
             throw new ResourceNotFoundException("Room not found");
         Room room = opt.get();
         room.setName(request.getName());
