@@ -40,11 +40,11 @@ export const cinemaService = {
   },
 
   /**
-   * Lấy danh sách phòng chiếu theo rạp (GET /api/rooms?cinemaId={id})
+   * Lấy danh sách phòng chiếu theo rạp (GET /api/rooms/movie/{id})
    */
   async getRoomsByCinemaId(cinemaId) {
     const res = await apiCall(API_ENDPOINTS.ROOMS.GET_BY_CINEMA, {
-      query: { cinemaId }
+      params: { id: cinemaId }
     });
     return res.data || [];
   },

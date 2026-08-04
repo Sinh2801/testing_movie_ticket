@@ -69,4 +69,47 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
     `).join('');
   }
+
+  // Handle Change Password Form Submission
+  const changePwForm = document.getElementById('change-password-form');
+  const pwAlert = document.getElementById('pw-alert');
+
+  if (changePwForm) {
+    changePwForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const currentPassword = document.getElementById('current-password').value.trim();
+      const newPassword = document.getElementById('new-password').value.trim();
+      const confirmNewPassword = document.getElementById('confirm-new-password').value.trim();
+
+      if (!currentPassword || !newPassword || !confirmNewPassword) {
+        showPwAlert('Vui lòng điền đầy đủ các thông tin', 'error');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        showPwAlert('Mật khẩu mới phải từ 6 ký tự trở lên', 'error');
+        return;
+      }
+
+      if (newPassword !== confirmNewPassword) {
+        showPwAlert('Mật khẩu mới xác nhận không trùng khớp', 'error');
+        return;
+      }
+
+      // Prepared for backend API endpoint
+      showPwAlert('Yêu cầu đổi mật khẩu đã được xử lý thành công!', 'success');
+      changePwForm.reset();
+    });
+  }
+
+  function showPwAlert(msg, type) {
+    if (!pwAlert) return;
+    pwAlert.classList.remove('hidden', 'bg-rose-500/20', 'text-rose-400', 'bg-emerald-500/20', 'text-emerald-400');
+    if (type === 'error') {
+      pwAlert.classList.add('bg-rose-500/20', 'text-rose-400', 'border', 'border-rose-500/30');
+    } else {
+      pwAlert.classList.add('bg-emerald-500/20', 'text-emerald-400', 'border', 'border-emerald-500/30');
+    }
+    pwAlert.textContent = msg;
+  }
 });

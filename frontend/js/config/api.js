@@ -42,7 +42,7 @@ export const API_ENDPOINTS = {
     UPDATE_CINEMA: { method: 'PUT', path: '/cinemas/edit' }
   },
   ROOMS: {
-    GET_BY_CINEMA: { method: 'GET', path: '/rooms' },
+    GET_BY_CINEMA: { method: 'GET', path: '/rooms/movie/:id' },
     ADD_ROOM: { method: 'POST', path: '/rooms/add' },
     UPDATE_ROOM: { method: 'PUT', path: '/rooms/update' }
   },
@@ -251,6 +251,20 @@ export async function apiCall(endpoint, { params = {}, query = {}, body = null, 
       // Handle Spring Boot ApiResponse wrapper: { message: "...", data: ... }
       const rawData = json.data !== undefined ? json.data : json;
 
+      // Handle AuthResponse: { token: "...", username: "...", email: "..." }
+      if (rawData && rawData.token) {
+        return {
+          success: true,
+          message: json.message || 'Success',
+          token: rawData.token,
+          data: rawData,
+          user: {
+            username: rawData.username || '',
+            email: rawData.email || ''
+          }
+        };
+      }
+
       // Handle PagedResponse wrapper: { content: [...], pageNumber: 1, ... }
       if (rawData && rawData.content && Array.isArray(rawData.content)) {
         return {
@@ -292,27 +306,23 @@ export async function apiCall(endpoint, { params = {}, query = {}, body = null, 
 
   // Auth Mocks
   if (endpoint.path === API_ENDPOINTS.AUTH.LOGIN.path) {
-    const { email, password } = body || {};
-    const mockUser = {
-      id: 1,
+    const { email } = body || {};
+    const mockAuthResp = {
+      token: 'mock_jwt_token_123',
       username: (email || 'user').split('@')[0],
-      email: email || 'user@example.com',
-      phoneNumber: '0988776655',
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`
+      email: email || 'user@example.com'
     };
-    return { success: true, token: 'mock_jwt_token_123', user: mockUser };
+    return { success: true, token: mockAuthResp.token, data: mockAuthResp, user: { username: mockAuthResp.username, email: mockAuthResp.email } };
   }
 
   if (endpoint.path === API_ENDPOINTS.AUTH.REGISTER.path) {
-    const { username, email, phone } = body || {};
-    const mockUser = {
-      id: 2,
+    const { username, email, phoneNumber } = body || {};
+    const mockAuthResp = {
+      token: 'mock_jwt_token_456',
       username: username || 'newuser',
-      email: email || 'new@example.com',
-      phoneNumber: phone || '0912345678',
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`
+      email: email || 'new@example.com'
     };
-    return { success: true, token: 'mock_jwt_token_456', user: mockUser };
+    return { success: true, token: mockAuthResp.token, data: mockAuthResp, user: { username: mockAuthResp.username, email: mockAuthResp.email } };
   }
 
   // Movies Filter & Search Mocks

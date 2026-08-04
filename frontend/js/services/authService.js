@@ -17,16 +17,16 @@ export const authService = {
   },
 
   /**
-   * Đăng ký tài khoản mới (username, email, password, phone)
+   * Đăng ký tài khoản mới (RegisterRequest: username, email, phoneNumber, password, confirmPassword)
    */
-  async register(username, email, password, phone) {
+  async register(username, email, phoneNumber, password, confirmPassword) {
     const res = await apiCall(API_ENDPOINTS.AUTH.REGISTER, {
-      body: { username, email, password, phone }
+      body: { username, email, phoneNumber, password, confirmPassword }
     });
 
     if (res.success && res.token) {
       localStorage.setItem('cine_token', res.token);
-      localStorage.setItem('cine_user', JSON.stringify(res.user));
+      localStorage.setItem('cine_user', JSON.stringify(res.user || { username: res.data?.username, email: res.data?.email }));
     }
     return res;
   },

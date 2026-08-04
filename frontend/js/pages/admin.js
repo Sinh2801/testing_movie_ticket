@@ -76,10 +76,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         actorsName: document.getElementById('movie-actors').value.trim(),
         duration: parseInt(document.getElementById('movie-duration').value) || 120,
         country: document.getElementById('movie-country').value.trim(),
-        movieStatus: document.getElementById('movie-status').value,
+        movieStatus: document.getElementById('movie-status').value || 'NOW_SHOWING',
         imageUrl: document.getElementById('movie-image-url').value.trim(),
         description: document.getElementById('movie-description').value.trim(),
-        genres: [1] // Default genre ID list for CreateMovieRequest
+        showAt: new Date().toISOString().slice(0, 19)
       };
 
       try {
@@ -88,6 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           movieData.id = parseInt(id);
           res = await movieService.updateMovie(movieData);
         } else {
+          movieData.genres = [1]; // Default genre ID (Short) for CreateMovieRequest
           res = await movieService.addMovie(movieData);
         }
 

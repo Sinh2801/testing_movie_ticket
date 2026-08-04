@@ -20,11 +20,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const username = document.getElementById('username').value.trim();
       const email = document.getElementById('email').value.trim();
+      const phoneNumber = document.getElementById('phone').value.trim();
       const password = document.getElementById('password').value.trim();
-      const phone = document.getElementById('phone').value.trim();
+      const confirmPassword = document.getElementById('confirm-password')?.value.trim() || password;
       const submitBtn = document.getElementById('submit-btn');
 
-      if (!username || !email || !password || !phone) {
+      if (!username || !email || !password || !phoneNumber || !confirmPassword) {
         showAlert('Vui lòng điền đầy đủ tất cả thông tin đăng ký', 'error');
         return;
       }
@@ -34,11 +35,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
+      if (password !== confirmPassword) {
+        showAlert('Mật khẩu xác nhận không khớp', 'error');
+        return;
+      }
+
       try {
         setLoading(submitBtn, true);
         hideAlert();
 
-        const response = await authService.register(username, email, password, phone);
+        const response = await authService.register(username, email, phoneNumber, password, confirmPassword);
 
         if (response.success) {
           showAlert('Tạo tài khoản thành công! Đang chuyển hướng...', 'success');

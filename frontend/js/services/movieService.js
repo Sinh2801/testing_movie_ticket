@@ -2,7 +2,7 @@ import { apiCall, API_ENDPOINTS } from '../config/api.js';
 
 export const movieService = {
   /**
-   * Lấy danh sách 10 phim mới nhất (gọi endpoint /movies/filter của Spring Boot)
+   * Lấy danh sách 10 phim mới nhất đang chiếu (movieStatus: NOW_SHOWING)
    */
   async getLatestMovies() {
     const res = await apiCall(API_ENDPOINTS.MOVIES.FILTER, {
@@ -13,6 +13,40 @@ export const movieService = {
         genreId: 0,
         movieStatus: 'NOW_SHOWING',
         country: ''
+      }
+    });
+    return res.data || [];
+  },
+
+  /**
+   * Lấy danh sách 3 phim mới nhất sắp chiếu (movieStatus: COMING_SOON) làm Hero Banner
+   */
+  async getComingSoonMovies(size = 3) {
+    const res = await apiCall(API_ENDPOINTS.MOVIES.FILTER, {
+      query: {
+        size: size,
+        page: 1,
+        name: '',
+        genreId: 0,
+        movieStatus: 'COMING_SOON',
+        country: ''
+      }
+    });
+    return res.data || [];
+  },
+
+  /**
+   * Lọc và tìm kiếm phim linh hoạt (tên, thể loại, quốc gia, trạng thái)
+   */
+  async filterMovies({ name = '', genreId = 0, movieStatus = 'NOW_SHOWING', country = '', page = 1, size = 10 } = {}) {
+    const res = await apiCall(API_ENDPOINTS.MOVIES.FILTER, {
+      query: {
+        size: size,
+        page: page,
+        name: name,
+        genreId: parseInt(genreId) || 0,
+        movieStatus: movieStatus,
+        country: country
       }
     });
     return res.data || [];

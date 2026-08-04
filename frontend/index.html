@@ -21,30 +21,91 @@
   <header id="main-header"></header>
 
   <!-- Main Content -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
     
-    <!-- Hero Banner Section -->
-    <section id="hero-banner-container"></section>
+    <!-- Hero Section: 3 Phim Sắp Chiếu Mới Nhất -->
+    <section>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+          <i class="fa-solid fa-sparkles text-rose-500"></i>
+          <span>Phim Sắp Chiếu Hot Nhất</span>
+        </h2>
+        <span class="text-xs text-rose-400 font-semibold bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20">
+          3 Phim Mới Nhất
+        </span>
+      </div>
+      <div id="hero-banner-container" class="w-full">
+        <!-- Populated via js/pages/home.js -->
+      </div>
+    </section>
 
-    <!-- Movies Section Header -->
+    <!-- Search & Filter Toolbar Section -->
+    <section class="bg-slate-900/90 p-5 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-filter text-rose-500"></i>
+          <span>Bộ Lọc Phim Nhanh</span>
+        </h3>
+        <button id="reset-filter-btn" class="text-xs text-slate-400 hover:text-rose-400 transition-colors flex items-center gap-1">
+          <i class="fa-solid fa-rotate-left"></i> Đặt lại
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <!-- 1. Search by Name -->
+        <div class="relative">
+          <input 
+            type="text" 
+            id="filter-name" 
+            placeholder="Tìm theo tên phim..." 
+            class="w-full bg-slate-950 text-white text-xs rounded-xl border border-slate-800 pl-9 pr-3 py-2.5 outline-none focus:border-rose-500 transition-all"
+          />
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+        </div>
+
+        <!-- 2. Select Genre -->
+        <div class="relative">
+          <select 
+            id="filter-genre" 
+            class="w-full bg-slate-950 text-slate-300 text-xs rounded-xl border border-slate-800 px-3 py-2.5 outline-none focus:border-rose-500 transition-all appearance-none cursor-pointer"
+          >
+            <option value="0">Tất cả thể loại</option>
+          </select>
+          <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs pointer-events-none"></i>
+        </div>
+
+        <!-- 3. Select Country -->
+        <div class="relative">
+          <select 
+            id="filter-country" 
+            class="w-full bg-slate-950 text-slate-300 text-xs rounded-xl border border-slate-800 px-3 py-2.5 outline-none focus:border-rose-500 transition-all appearance-none cursor-pointer"
+          >
+            <option value="">Tất cả quốc gia</option>
+            <option value="Mỹ">Mỹ</option>
+            <option value="Hàn Quốc">Hàn Quốc</option>
+            <option value="Nhật Bản">Nhật Bản</option>
+            <option value="Việt Nam">Việt Nam</option>
+            <option value="Anh">Anh</option>
+          </select>
+          <i class="fa-solid fa-globe absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs pointer-events-none"></i>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Movies Grid Section -->
     <section class="space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-800/80 pb-4">
         <div>
-          <h2 id="section-title" class="text-2xl sm:text-3xl font-black text-white tracking-wide border-l-4 border-rose-500 pl-4">
-            Top 10 Phim Mới Nhất Chiếu Rạp
+          <h2 id="section-title" class="text-xl sm:text-2xl font-black text-white border-l-4 border-rose-500 pl-4">
+            Top 10 Phim Đang Chiếu Rạp
           </h2>
-          <p id="result-info" class="text-slate-400 text-xs sm:text-sm mt-1 pl-4">
-            Danh sách 10 phim đang gây bão phòng vé tuần này
+          <p id="result-info" class="text-slate-400 text-xs mt-1 pl-4">
+            Danh sách 10 phim mới nhất đang gây bão phòng vé
           </p>
-        </div>
-        
-        <div class="flex items-center gap-2 text-xs font-semibold text-rose-400 bg-rose-500/10 px-3 py-1.5 rounded-full border border-rose-500/20 self-start sm:self-auto">
-          <i class="fa-solid fa-sparkles"></i>
-          <span>Cập nhật liên tục 24/7</span>
         </div>
       </div>
 
-      <!-- 10 Movies Grid Container -->
+      <!-- Movies Grid Container -->
       <div id="movie-list-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
         <!-- Movies populated dynamically via js/pages/home.js -->
       </div>
