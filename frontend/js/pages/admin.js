@@ -2,6 +2,7 @@ import { renderHeader } from '../components/header.js';
 import { renderFooter } from '../components/footer.js';
 import { movieService } from '../services/movieService.js';
 import { cinemaService } from '../services/cinemaService.js';
+import { ShowtimeService } from '../services/showtimeService.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   await renderHeader();
@@ -36,7 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Modal Close Handlers
   document.querySelectorAll('.close-modal-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('#movie-modal, #genre-modal, #cinema-modal, #room-modal').forEach(m => m.classList.add('hidden'));
+      document.querySelectorAll('#movie-modal, #genre-modal, #cinema-modal, #room-modal, #showtime-modal').forEach(m => m.classList.add('hidden'));
     });
   });
 
@@ -88,7 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           movieData.id = parseInt(id);
           res = await movieService.updateMovie(movieData);
         } else {
-          movieData.genres = [1]; // Default genre ID (Short) for CreateMovieRequest
+          movieData.genres = [1];
           res = await movieService.addMovie(movieData);
         }
 
@@ -247,6 +248,74 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   }
+
+  // --- 5. SHOWTIME CRUD & FILTER LOGIC ---
+  const openAddShowtimeBtn = document.getElementById('open-add-showtime-btn');
+  const showtimeModal = document.getElementById('showtime-modal');
+  const showtimeForm = document.getElementById('showtime-form');
+  const showtimeCinemaSelect = document.getElementById('showtime-cinema-select');
+
+  if (openAddShowtimeBtn && showtimeModal) {
+    openAddShowtimeBtn.addEventListener('click', async () => {
+      await populateShowtimeFormDropdowns();
+      // Set default start time to tomorrow at 19:00
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(19, 0, 0, 0);
+      document.getElementById('showtime-start-time').value = tomorrow.toISOString().slice(0, 16);
+      showtimeModal.classList.remove('hidden');
+    });
+  }
+
+  if (showtimeCinemaSelect) {
+    showtimeCinemaSelect.addEventListener('change', async () => {
+      await populateRoomsForCinema(showtimeCinemaSelect.value);
+    });
+  }
+
+  if (showtimeForm) {
+    showtimeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        cinemaId: parseInt(document.getElementById('showtime-cinema-select').value),
+        roomId: parseInt(document.getElementById('showtime-room-select').value),
+        movieId: parseInt(document.getElementById('showtime-movie-select').value),
+        price: parseFloat(document.getElementById('showtime-price').value),
+        startTime: document.getElementById('showtime-start-time').value
+      };
+
+      try {
+        const res = await ShowtimeService.createShowtime(data);
+        if (res.status === 200 || res.status === 201 || res.data) {
+          showtimeModal.classList.add('hidden');
+          showAdminAlert('Tạo suất chiếu thành công! Đã tự động khởi tạo sơ đồ ghế.', 'success');
+          await loadShowtimesTable();
+        } else {
+          showAdminAlert(res.message || 'Tạo suất chiếu thất bại', 'error');
+        }
+      } catch (err) {
+        showAdminAlert(err.message || 'Lỗi gọi API Tạo suất chiếu', 'error');
+      }
+    });
+  }
+
+  // Showtime Filters Handlers
+  const filterCinema = document.getElementById('filter-showtime-cinema');
+  const filterDate = document.getElementById('filter-showtime-date');
+  const filterSearch = document.getElementById('filter-showtime-search');
+  const btnResetFilter = document.getElementById('btn-reset-showtime-filter');
+
+  if (filterCinema) filterCinema.addEventListener('change', loadShowtimesTable);
+  if (filterDate) filterDate.addEventListener('change', loadShowtimesTable);
+  if (filterSearch) filterSearch.addEventListener('input', debounce(loadShowtimesTable, 300));
+  if (btnResetFilter) {
+    btnResetFilter.addEventListener('click', () => {
+      if (filterCinema) filterCinema.value = '';
+      if (filterDate) filterDate.value = '';
+      if (filterSearch) filterSearch.value = '';
+      loadShowtimesTable();
+    });
+  }
 });
 
 // Loaders
@@ -254,6 +323,8 @@ async function loadAllAdminData() {
   await loadMoviesTable();
   await loadGenresTable();
   await loadCinemasTable();
+  await loadShowtimeFilters();
+  await loadShowtimesTable();
 }
 
 async function loadMoviesTable() {
@@ -326,8 +397,6 @@ async function loadCinemasTable() {
   if (!tableBody) return;
 
   let cinemas = await cinemaService.getAllCinemas();
-
-  // Mock fallback if empty
   if (!cinemas || cinemas.length === 0) {
     cinemas = [
       { id: 1, name: 'CinePrime Vincom Landmark 81', address: '720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP.HCM' },
@@ -335,7 +404,6 @@ async function loadCinemasTable() {
     ];
   }
 
-  // Populate Cinema Select in Rooms Tab
   if (roomCinemaSelect) {
     roomCinemaSelect.innerHTML = cinemas.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
     await loadRoomsTable(cinemas[0]?.id || 1);
@@ -360,8 +428,6 @@ async function loadRoomsTable(cinemaId) {
   if (!tableBody) return;
 
   let rooms = await cinemaService.getRoomsByCinemaId(cinemaId);
-
-  // Mock fallback if empty
   if (!rooms || rooms.length === 0) {
     rooms = [
       { id: 101, name: 'Phòng 01 (IMAX 3D)', numberOfRows: 6, numberOfColumns: 8, description: 'Phòng chiếu chuẩn IMAX cao cấp' },
@@ -384,42 +450,96 @@ async function loadRoomsTable(cinemaId) {
   `).join('');
 }
 
-// Global Edit Triggers
-window.editMovie = (id, name, director, actors, duration, country, imageUrl) => {
-  document.getElementById('movie-modal-title').textContent = 'Chỉnh Sửa Thông Tin Phim';
-  document.getElementById('movie-form-id').value = id;
-  document.getElementById('movie-name').value = name;
-  document.getElementById('movie-director').value = director;
-  document.getElementById('movie-actors').value = actors;
-  document.getElementById('movie-duration').value = duration;
-  document.getElementById('movie-country').value = country;
-  document.getElementById('movie-image-url').value = imageUrl;
-  document.getElementById('movie-modal').classList.remove('hidden');
-};
+// Showtimes table & filters logic
+async function loadShowtimeFilters() {
+  const filterCinema = document.getElementById('filter-showtime-cinema');
+  if (!filterCinema) return;
 
-window.editGenre = (id, name) => {
-  document.getElementById('genre-modal-title').textContent = 'Chỉnh Sửa Thể Loại';
-  document.getElementById('genre-form-id').value = id;
-  document.getElementById('genre-name').value = name;
-  document.getElementById('genre-modal').classList.remove('hidden');
-};
+  let cinemas = await cinemaService.getAllCinemas();
+  if (cinemas && cinemas.length > 0) {
+    filterCinema.innerHTML = `<option value="">Tất cả cụm rạp</option>` +
+      cinemas.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  }
+}
 
-window.editCinema = (id, name, address) => {
-  document.getElementById('cinema-modal-title').textContent = 'Chỉnh Sửa Rạp Chiếu';
-  document.getElementById('cinema-form-id').value = id;
-  document.getElementById('cinema-name').value = name;
-  document.getElementById('cinema-address').value = address;
-  document.getElementById('cinema-modal').classList.remove('hidden');
-};
+async function loadShowtimesTable() {
+  const tableBody = document.getElementById('admin-showtime-table');
+  if (!tableBody) return;
 
-window.editRoom = (id, name, description) => {
-  document.getElementById('room-modal-title').textContent = 'Chỉnh Sửa Phòng Chiếu';
-  document.getElementById('room-form-id').value = id;
-  document.getElementById('room-name').value = name;
-  document.getElementById('room-description').value = description;
-  document.getElementById('room-modal').classList.remove('hidden');
-};
+  const cinemaId = document.getElementById('filter-showtime-cinema')?.value || null;
+  const date = document.getElementById('filter-showtime-date')?.value || null;
+  const movieName = document.getElementById('filter-showtime-search')?.value.trim() || null;
 
+  try {
+    const res = await ShowtimeService.filterShowtimes(cinemaId, date, movieName);
+    const showtimes = res.data || [];
+
+    if (showtimes.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500">Không tìm thấy suất chiếu phù hợp</td></tr>`;
+      return;
+    }
+
+    tableBody.innerHTML = showtimes.map(st => `
+      <tr class="hover:bg-slate-800/40 transition-colors">
+        <td class="px-6 py-4 font-mono font-bold text-rose-400">#${st.id}</td>
+        <td class="px-6 py-4 font-bold text-white">
+          <div class="flex items-center gap-3">
+            <img src="${st.movieImageUrl || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=300&q=80'}" class="w-8 h-10 object-cover rounded shadow">
+            <div>
+              <div>${st.movieName}</div>
+              <div class="text-xs text-slate-400 font-normal">${st.duration || 120} phút</div>
+            </div>
+          </div>
+        </td>
+        <td class="px-6 py-4 text-xs">
+          <div class="font-semibold text-slate-200">${st.cinemaName}</div>
+          <div class="text-rose-400 font-bold">${st.roomName}</div>
+        </td>
+        <td class="px-6 py-4 font-bold text-emerald-400">${(st.price || 0).toLocaleString('vi-VN')} VNĐ</td>
+        <td class="px-6 py-4 text-xs font-mono text-amber-300 font-bold">
+          ${st.startTime ? new Date(st.startTime).toLocaleString('vi-VN') : ''}
+        </td>
+        <td class="px-6 py-4 text-right">
+          <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            Sẵn sàng
+          </span>
+        </td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-rose-500">Lỗi khi tải suất chiếu: ${err.message}</td></tr>`;
+  }
+}
+
+async function populateShowtimeFormDropdowns() {
+  const movieSelect = document.getElementById('showtime-movie-select');
+  const cinemaSelect = document.getElementById('showtime-cinema-select');
+
+  const movies = await movieService.getLatestMovies();
+  movieSelect.innerHTML = movies.map(m => `<option value="${m.id}">${m.title}</option>`).join('');
+
+  let cinemas = await cinemaService.getAllCinemas();
+  if (!cinemas || cinemas.length === 0) {
+    cinemas = [
+      { id: 1, name: 'CinePrime Vincom Landmark 81' },
+      { id: 2, name: 'CinePrime Paragon Quận 7' }
+    ];
+  }
+  cinemaSelect.innerHTML = cinemas.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
+  await populateRoomsForCinema(cinemas[0].id);
+}
+
+async function populateRoomsForCinema(cinemaId) {
+  const roomSelect = document.getElementById('showtime-room-select');
+  let rooms = await cinemaService.getRoomsByCinemaId(cinemaId);
+  if (!rooms || rooms.length === 0) {
+    rooms = [{ id: 1, name: 'Phòng 01 (IMAX 3D)' }, { id: 2, name: 'Phòng 02 (2D Atmos)' }];
+  }
+  roomSelect.innerHTML = rooms.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+}
+
+// Helpers
 function showAdminAlert(msg, type = 'success') {
   const alertBox = document.getElementById('admin-alert');
   if (!alertBox) return;
@@ -438,4 +558,12 @@ function showAdminAlert(msg, type = 'success') {
 
 function escapeQuote(str) {
   return (str || '').replace(/'/g, "\\'");
+}
+
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
 }

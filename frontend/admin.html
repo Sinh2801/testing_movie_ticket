@@ -58,6 +58,10 @@
         <i class="fa-solid fa-door-open"></i>
         <span>Quản lý Phòng chiếu</span>
       </button>
+      <button data-tab="showtimes" class="admin-tab-btn flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent hover:border-slate-800">
+        <i class="fa-solid fa-clock"></i>
+        <span>Quản lý Suất chiếu</span>
+      </button>
     </div>
 
     <!-- TAB 1: QUẢN LÝ PHIM -->
@@ -185,6 +189,62 @@
             </tr>
           </thead>
           <tbody id="admin-room-table" class="divide-y divide-slate-800/60">
+            <!-- Populated via admin.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 5: QUẢN LÝ SUẤT CHIẾU -->
+    <section id="tab-showtimes" class="admin-tab-content hidden space-y-6">
+      <div class="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h2 class="text-xl font-bold text-white">Danh Sách Suất Chiếu Phim</h2>
+          <p class="text-xs text-slate-400">Lọc theo rạp, ngày chiếu và tìm kiếm theo tên phim</p>
+        </div>
+        
+        <button id="open-add-showtime-btn" class="px-5 py-2.5 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-600/30 transition-all flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i> Tạo Suất Chiếu Mới
+        </button>
+      </div>
+
+      <!-- Filters toolbar -->
+      <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 flex flex-wrap items-center gap-4 text-xs">
+        <div class="flex items-center gap-2">
+          <label class="font-bold text-slate-400">Chọn Rạp:</label>
+          <select id="filter-showtime-cinema" class="bg-slate-950 text-white rounded-xl border border-slate-800 px-3 py-2 outline-none focus:border-rose-500">
+            <option value="">Tất cả cụm rạp</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <label class="font-bold text-slate-400">Ngày Chiếu:</label>
+          <input type="date" id="filter-showtime-date" class="bg-slate-950 text-white rounded-xl border border-slate-800 px-3 py-2 outline-none focus:border-rose-500">
+        </div>
+
+        <div class="flex items-center gap-2 flex-1 min-w-[200px]">
+          <label class="font-bold text-slate-400">Tìm Phim:</label>
+          <input type="text" id="filter-showtime-search" placeholder="Nhập tên phim cần tìm..." class="w-full bg-slate-950 text-white rounded-xl border border-slate-800 px-3 py-2 outline-none focus:border-rose-500">
+        </div>
+
+        <button id="btn-reset-showtime-filter" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl flex items-center gap-1">
+          <i class="fa-solid fa-rotate-left"></i> Đặt lại
+        </button>
+      </div>
+
+      <div class="bg-slate-900/90 rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
+        <table class="w-full text-left text-sm text-slate-300">
+          <thead class="bg-slate-950 text-xs font-bold text-slate-400 uppercase border-b border-slate-800">
+            <tr>
+              <th class="px-6 py-4">ID</th>
+              <th class="px-6 py-4">Tên Phim</th>
+              <th class="px-6 py-4">Rạp & Phòng Chiếu</th>
+              <th class="px-6 py-4">Giá Vé (VNĐ)</th>
+              <th class="px-6 py-4">Thời Gian Chiếu</th>
+              <th class="px-6 py-4 text-right">Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody id="admin-showtime-table" class="divide-y divide-slate-800/60">
             <!-- Populated via admin.js -->
           </tbody>
         </table>
@@ -347,6 +407,58 @@
         <div class="pt-4 flex justify-end gap-3 border-t border-slate-800">
           <button type="button" class="close-modal-btn px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl">Hủy</button>
           <button type="submit" class="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow-lg shadow-rose-600/30">Lưu Phòng Chiếu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 5: ADD SHOWTIME -->
+  <div id="showtime-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 p-8 rounded-3xl max-w-lg w-full shadow-2xl space-y-6">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <h3 id="showtime-modal-title" class="text-xl font-bold text-white">Tạo Suất Chiếu Mới</h3>
+        <button type="button" class="close-modal-btn text-slate-400 hover:text-white text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="showtime-form" class="space-y-4 text-xs">
+        <div class="space-y-1">
+          <label class="font-bold text-slate-300">Chọn Phim*</label>
+          <select id="showtime-movie-select" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-rose-500">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="font-bold text-slate-300">Chọn Rạp Chiếu*</label>
+            <select id="showtime-cinema-select" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-rose-500">
+              <!-- Populated via JS -->
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="font-bold text-slate-300">Chọn Phòng Chiếu*</label>
+            <select id="showtime-room-select" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-rose-500">
+              <!-- Populated via JS after cinema selected -->
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="font-bold text-slate-300">Giá Vé (VNĐ)*</label>
+            <input type="number" id="showtime-price" required value="90000" step="5000" min="10000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-rose-500">
+          </div>
+          <div class="space-y-1">
+            <label class="font-bold text-slate-300">Thời Gian Bắt Đầu*</label>
+            <input type="datetime-local" id="showtime-start-time" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-rose-500">
+          </div>
+        </div>
+
+        <div class="pt-4 flex justify-end gap-3 border-t border-slate-800">
+          <button type="button" class="close-modal-btn px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl">Hủy</button>
+          <button type="submit" class="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow-lg shadow-rose-600/30">Tạo Suất Chiếu</button>
         </div>
       </form>
     </div>

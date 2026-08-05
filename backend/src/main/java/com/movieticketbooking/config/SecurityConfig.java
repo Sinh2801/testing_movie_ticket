@@ -37,7 +37,11 @@ public class SecurityConfig {
                 .sessionManagement(
                         sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                 // GENRES
+                // AUTH
+                .requestMatchers(
+                        "/api/auth/**"
+                ).permitAll()
+                // GENRES
                 .requestMatchers(HttpMethod.GET,
                         "/api/genres/**"
                 ).permitAll()
@@ -77,6 +81,17 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT,
                         "/api/rooms/edit/**"
                 ).hasRole("ADMIN")
+                // SHOWTIMES
+                .requestMatchers(HttpMethod.GET,
+                        "/api/showtimes/**"
+                ).permitAll()
+                .requestMatchers(HttpMethod.POST,
+                        "/api/showtimes/add"
+                ).hasRole("ADMIN")
+                // PAYMENTS CALLBACK
+                .requestMatchers(HttpMethod.POST,
+                        "/api/payments/momo/callback"
+                ).permitAll()
                 // OTHER API
                 .anyRequest().authenticated()
                 )

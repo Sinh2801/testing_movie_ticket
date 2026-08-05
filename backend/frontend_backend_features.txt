@@ -1,124 +1,71 @@
-========================================================================================
-             THỐNG KÊ HỆ THỐNG MOVIE TICKET BOOKING (FRONTEND & BACKEND)
-========================================================================================
+================================================================================
+          PROJECT MOVIE TICKET BOOKING - BACKEND & FRONTEND FEATURES DOCS
+================================================================================
 
-----------------------------------------------------------------------------------------
-I. DANH SÁCH CHỨC NĂNG VÀ TRẠNG THÁI NỐI API Ở FRONTEND
-----------------------------------------------------------------------------------------
+1. TỔNG QUAN HỆ THỐNG (SYSTEM OVERVIEW)
+--------------------------------------------------------------------------------
+Hệ thống Đặt Vé Xem Phim CinePrime với backend Spring Boot RESTful API và 
+frontend Vanilla Javascript / Tailwind CSS cao cấp. Hỗ trợ hệ quản trị admin 
+và người dùng đặt vé trực tuyến kèm mô phỏng thanh toán MoMo Gateway và gửi email 
+xác nhận qua Gmail SMTP.
 
-1. TRANG CHỦ (index.html / home.js)
-   - [ĐÃ NỐI API BACKEND] Banner Hero Top: Hiển thị 3 bộ phim mới nhất sắp chiếu (MovieStatus: COMING_SOON) gọi từ endpoint GET /api/movies/filter?movieStatus=COMING_SOON&size=3.
-   - [ĐÃ NỐI API BACKEND] Danh sách phim bên dưới: Hiển thị Top 10 bộ phim mới nhất đang chiếu (MovieStatus: NOW_SHOWING) gọi từ endpoint GET /api/movies/filter?movieStatus=NOW_SHOWING&size=10.
-   - [ĐÃ NỐI API BACKEND] Bộ lọc & Tìm kiếm phim đa tiêu chí:
-     + Ô tìm kiếm theo Tên phim (Name): gọi API GET /api/movies/filter?name=...
-     + Dropdown chọn Thể loại (Genre): tự động tải danh sách thể loại từ API GET /api/genres/all và lọc phim theo genreId.
-     + Dropdown chọn Quốc gia (Country): lọc phim theo country.
-     + Nút Đặt lại bộ lọc (Reset Filter): đưa các ô tìm kiếm về mặc định và tải lại 10 phim mới nhất.
+2. DANH SÁCH API BACKEND (ENDPOINTS & DTOs)
+--------------------------------------------------------------------------------
+[AUTHENTICATION]
+- POST /api/auth/register      : Đăng ký tài khoản (RegisterRequest -> AuthResponse + JWT)
+- POST /api/auth/login         : Đăng nhập tài khoản (LoginRequest -> AuthResponse + JWT)
 
-2. TRANG ĐĂNG NHẬP (login.html / login.js)
-   - [ĐÃ NỐI API BACKEND] Gửi yêu cầu đăng nhập bằng Email và Password đến endpoint POST /api/auth/login.
-   - [ĐÃ NỐI API BACKEND] Xử lý lưu trữ JWT Token (cine_token) và thông tin người dùng (username, email) vào LocalStorage.
-   - [NỐI MOCK FALLBACK] Trường hợp Backend chưa sẵn sàng, tự động dùng Mock Data để kiểm thử giao diện.
+[GENRES MANAGEMENT]
+- GET /api/genres              : Lấy danh sách thể loại phim
+- POST /api/genres/add         : Thêm mới thể loại (Admin)
+- PUT /api/genres/edit/{id}    : Sửa thể loại (Admin)
 
-3. TRANG ĐĂNG KÝ (register.html / register.js)
-   - [ĐÃ NỐI API BACKEND] Form đăng ký tài khoản gồm các trường: Username, Email, Phone Number, Password, Confirm Password gửi đến POST /api/auth/register.
-   - Kiểm tra logic mật khẩu xác nhận (Confirm Password) khớp trước khi gửi dữ liệu lên Backend.
+[CINEMAS MANAGEMENT]
+- GET /api/cinemas             : Lấy danh sách rạp chiếu phim
+- POST /api/cinemas/add        : Thêm cụm rạp mới (Admin)
+- PUT /api/cinemas/edit/{id}   : Sửa thông tin rạp chiếu (Admin)
 
-4. TRANG CHI TIẾT PHIM (movie-detail.html / movieDetail.js)
-   - [ĐÃ NỐI API BACKEND] Tải chi tiết thông tin bộ phim theo ID từ endpoint GET /api/movies/movie/{id}.
-   - Hiển thị tên phim, đạo diễn, diễn viên, thời lượng, đánh giá (rating), quốc gia, mô tả nội dung và danh sách thể loại phim.
-   - Nút "Đặt Vé Ngay" chuyển hướng người dùng sang trang chọn ghế.
+[ROOMS MANAGEMENT]
+- GET /api/rooms/cinema/{id}   : Lấy danh sách phòng chiếu theo ID rạp
+- POST /api/rooms/add          : Thêm phòng chiếu mới + tự sinh sơ đồ ghế (Admin)
+- PUT /api/rooms/edit/{id}     : Sửa thông tin phòng chiếu (Admin)
 
-5. TRANG ĐẶT VÉ & CHỌN GHẾ (booking.html / booking.js)
-   - [ĐÃ NỐI API BACKEND] Tải danh sách phòng chiếu và sơ đồ ghế từ API GET /api/rooms/movie/{cinemaId}.
-   - [NỐI MOCK FALLBACK] Chọn suất chiếu (Showtime) hiện đang dùng Mock Data (chờ Backend hoàn thiện ShowtimeController).
-   - Hiển thị sơ đồ ghế động (Ghế Thường, Ghế VIP, Ghế Couple), tính tổng tiền thời gian thực khi người dùng chọn ghế.
-   - [NỐI MOCK FALLBACK] Xác nhận thanh toán đặt vé (chờ Backend hoàn thiện TicketController & PaymentController).
+[MOVIES MANAGEMENT]
+- GET /api/movies              : Lấy danh sách phim đang chiếu / sắp chiếu
+- GET /api/movies/latest       : Lấy 6 phim mới nhất cho trang chủ
+- GET /api/movies/{id}         : Lấy thông tin chi tiết phim
+- POST /api/movies/add         : Thêm phim mới (Admin)
+- PUT /api/movies/edit/{id}    : Cập nhật thông tin phim (Admin)
 
-6. TRANG CÁ NHÂN (profile.html / profile.js)
-   - Hiển thị thông tin cá nhân của User: Avatar, Username, Email, Số điện thoại và Vai trò (Role).
-   - Form "Đổi mật khẩu": nhập Mật khẩu hiện tại, Mật khẩu mới, Xác nhận mật khẩu mới (Đã có UI & validate client-side, sẵn sàng đấu nối khi Backend có API đổi mật khẩu).
-   - Hiển thị danh sách Lịch sử các vé phim đã đặt của người dùng.
+[SHOWTIMES MANAGEMENT]
+- POST /api/showtimes/add      : Tạo suất chiếu mới (Admin) -> Tự động sinh danh sách ShowTimeSeat
+- GET /api/showtimes/filter    : Lọc suất chiếu theo cinemaId, date, movieName
+- GET /api/showtimes/movie/{id}: Lấy danh sách suất chiếu của 1 bộ phim
+- GET /api/showtimes/{id}      : Lấy chi tiết suất chiếu
+- GET /api/showtimes/{id}/seats: Lấy sơ đồ ghế và trạng thái (AVAILABLE, BOOKED) của suất chiếu
 
-7. TRANG QUẢN TRỊ ADMIN (admin.html / admin.js)
-   - [ĐÃ NỐI API BACKEND] Quản lý Phim:
-     + Tải danh sách phim.
-     + Thêm phim mới (POST /api/movies/add với payload CreateMovieRequest).
-     + Cập nhật phim (POST /api/movies/edit với payload UpdateMovieRequest).
-   - [ĐÃ NỐI API BACKEND] Quản lý Thể loại:
-     + Thêm thể loại mới (POST /api/genres/add).
-     + Cập nhật thể loại (PUT /api/genres/edit).
-   - [ĐÃ NỐI API BACKEND] Quản lý Rạp chiếu:
-     + Thêm rạp chiếu mới (POST /api/cinemas/add).
-     + Cập nhật rạp chiếu (PUT /api/cinemas/edit).
-   - [ĐÃ NỐI API BACKEND] Quản lý Phòng chiếu:
-     + Lấy danh sách phòng chiếu theo rạp (GET /api/rooms/movie/{cinemaId}).
-     + Thêm phòng chiếu mới (POST /api/rooms/add) -> Backend tự động tạo sơ đồ ghế.
-     + Cập nhật thông tin phòng chiếu (PUT /api/rooms/update).
+[TICKET BOOKING & CANCELLATION]
+- POST /api/tickets/book       : Đặt vé mới (CreateTicketRequest -> TicketResponse status PENDING)
+- POST /api/tickets/{id}/cancel: Hủy vé đã đặt (Yêu cầu ít nhất 2 tiếng trước giờ chiếu). Tự động đổi trạng thái vé thành CANCELLED, hoàn ghế ShowTimeSeat về AVAILABLE, gửi email xác nhận.
+- GET /api/tickets/history     : Lấy danh sách vé đã đặt của user đang đăng nhập
+- GET /api/tickets/{id}        : Lấy thông tin vé theo ID
+- GET /api/tickets/uid/{uid}   : Lấy thông tin vé theo mã UID duy nhất
 
+[PAYMENT & EMAIL]
+- POST /api/payments/momo/create  : Tạo yêu cầu thanh toán MoMo Sandbox
+- POST /api/payments/momo/callback: Nhận callback từ MoMo -> Chuyển vé sang CONFIRMED, ghế sang BOOKED, tự động gửi Email xác nhận qua Gmail SMTP (với cơ chế Fallback Logger).
 
-----------------------------------------------------------------------------------------
-II. DANH SÁCH CHỨC NĂNG VÀ API ĐÃ THỰC HIỆN Ở BACKEND (SPRING BOOT)
-----------------------------------------------------------------------------------------
-
-1. MODULE AUTHENTICATION (AuthController.java - /api/auth)
-   - POST /api/auth/register
-     + Mục đích: Đăng ký tài khoản người dùng mới.
-     + Request Body (RegisterRequest): { username, email, phoneNumber, password, confirmPassword }
-     + Response (ApiResponse<AuthResponse>): { token, username, email }
-   - POST /api/auth/login
-     + Mục đích: Đăng nhập vào hệ thống và nhận JWT Token.
-     + Request Body (LoginRequest): { email, password }
-     + Response (ApiResponse<AuthResponse>): { token, username, email }
-
-2. MODULE MOVIE (MovieController.java - /api/movies)
-   - GET /api/movies/filter
-     + Mục đích: Lọc và tìm kiếm phim có phân trang theo nhiều tiêu chí.
-     + Query Parameters: size (int), page (int), name (String), genreId (short), movieStatus (Enum: NOW_SHOWING, COMING_SOON, STOPPED_SHOWING), country (String).
-     + Response (ApiResponse<PagedResponse<MovieResponse>>): danh sách phim khớp tiêu chí, tổng số trang, tổng số item.
-   - GET /api/movies/movie/{id}
-     + Mục đích: Lấy thông tin chi tiết của 1 bộ phim theo ID.
-     + Path Variable: id (int)
-     + Response (ApiResponse<MovieResponse>): { id, name, directorName, actorsName, description, duration, country, imageUrl, rating, genres, movieStatus, showAt, createdAt }
-   - POST /api/movies/add
-     + Mục đích: Thêm mới phim (Dành cho Admin).
-     + Request Body (CreateMovieRequest): { name, directorName, actorsName, description, duration, country, imageUrl, genres (List<Short>), movieStatus, showAt }
-   - POST /api/movies/edit
-     + Mục đích: Cập nhật thông tin phim (Dành cho Admin).
-     + Request Body (UpdateMovieRequest): { id, name, directorName, actorsName, description, duration, country, imageUrl, movieStatus, showAt }
-
-3. MODULE GENRE (GenreController.java - /api/genres)
-   - GET /api/genres/all
-     + Mục đích: Lấy toàn bộ danh sách thể loại phim.
-     + Response (ApiResponse<List<GenreResponse>>): [{ id, name }]
-   - POST /api/genres/add
-     + Mục đích: Thêm thể loại mới (Dành cho Admin).
-     + Request Body (CreateGenreRequest): { name }
-   - PUT /api/genres/edit
-     + Mục đích: Cập nhật thể loại (Dành cho Admin).
-     + Request Body (UpdateGenreRequest): { id, name }
-
-4. MODULE CINEMA (CinemaController.java - /api/cinemas)
-   - GET /api/cinemas/all
-     + Mục đích: Lấy danh sách tất cả các rạp chiếu phim.
-     + Response (ApiResponse<List<CinemaResponse>>): [{ id, name, address }]
-   - POST /api/cinemas/add
-     + Mục đích: Thêm rạp chiếu mới (Dành cho Admin).
-     + Request Body (CreateCinemaRequest): { name, address }
-   - PUT /api/cinemas/edit
-     + Mục đích: Cập nhật thông tin rạp chiếu (Dành cho Admin).
-     + Request Body (UpdateCinemaRequest): { id, name, address }
-
-5. MODULE ROOM (RoomController.java - /api/rooms)
-   - GET /api/rooms/movie/{id}
-     + Mục đích: Lấy danh sách các phòng chiếu thuộc một rạp cụ thể theo cinemaId.
-     + Path Variable: id (int) - là cinemaId.
-     + Response (ApiResponse<List<RoomResponse>>): [{ id, name, numberOfColumns, numberOfRows, description, cinemaId }]
-   - POST /api/rooms/add
-     + Mục đích: Thêm phòng chiếu mới (Dành cho Admin). Khi tạo phòng, Backend tự động sinh danh sách ghế (seats) tương ứng dựa trên số hàng và số cột.
-     + Request Body (CreateRoomRequest): { name, numberOfColumns, numberOfRows, description, cinemaId }
-   - PUT /api/rooms/update
-     + Mục đích: Cập nhật thông tin phòng chiếu (Dành cho Admin).
-     + Request Body (UpdateRoomRequest): { id, name, description }
-
-========================================================================================
+3. CÁC TÍNH NĂNG FRONTEND ĐÃ HOÀN THIỆN
+--------------------------------------------------------------------------------
+- Admin Dashboard:
+  + Quản lý Phim, Thể loại, Rạp chiếu, Phòng chiếu.
+  + Quản lý Suất chiếu: Tạo mới suất chiếu, Bộ lọc theo rạp, lọc theo ngày chiếu, tìm kiếm theo tên phim.
+- User Booking Flow:
+  + Trang chi tiết & chọn suất chiếu.
+  + Sơ đồ chọn ghế trực quan (real-time seat status từ backend).
+  + Trang xác nhận đơn hàng & phương thức thanh toán.
+  + Cổng thanh toán mô phỏng MoMo Gateway (payment-success.html).
+  + Trang Hồ sơ cá nhân (profile.html): 
+    * Xem Lịch sử đặt vé.
+    * Hủy vé xem phim (Hiển thị nút Hủy vé nếu cách giờ chiếu >= 2h, tự động làm mới danh sách và cập nhật sơ đồ ghế).
+    * Đổi mật khẩu tài khoản.

@@ -1,5 +1,9 @@
 package com.movieticketbooking.model;
 
 public enum PaymentMethod {
-	VNPAY
+	MOMO,
+	VNPAY,
+	CREDIT_CARD,
+	BANK_TRANSFER,
+	CASH
 }
