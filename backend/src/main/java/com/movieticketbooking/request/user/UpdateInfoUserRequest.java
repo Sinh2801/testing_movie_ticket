@@ -12,7 +12,7 @@ public class UpdateInfoUserRequest {
     private int id;
     @NotBlank
     @Size(min = 1, max = 20)
-    private String username;
+    private String name;
 
     @NotBlank
     @Email(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$",

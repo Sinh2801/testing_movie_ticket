@@ -1,0 +1,43 @@
+[AUTHENTICATION]
+p- POST /api/auth/register      : Đăng ký tài khoản (RegisterRequest -> AuthResponse + JWT) 
+p- POST /api/auth/login         : Đăng nhập tài khoản (LoginRequest -> AuthResponse + JWT) 
+
+[GENRES MANAGEMENT]
+p- GET /api/genres/all         : Lấy danh sách thể loại phim
+- POST /api/genres/add         : Thêm mới thể loại (Admin)
+- PUT /api/genres/edit/{id}    : Sửa thể loại (Admin)
+
+[CINEMAS MANAGEMENT]
+p- GET /api/cinemas             : Lấy danh sách rạp chiếu phim
+p- GET /api/cinemas/cinema/{id} : Lấy phim theo id
+- POST /api/cinemas/add        : Thêm cụm rạp mới (Admin)
+- PUT /api/cinemas/edit/{id}   : Sửa thông tin rạp chiếu (Admin)
+
+[ROOMS MANAGEMENT]
+- GET /api/rooms/room/{id}   : Lấy danh sách phòng chiếu theo ID rạp
+- POST /api/rooms/add          : Thêm phòng chiếu mới + tự sinh sơ đồ ghế (Admin)
+- PUT /api/rooms/edit/{id}     : Sửa thông tin phòng chiếu (Admin)
+
+[MOVIES MANAGEMENT]
+- GET /api/movies/filter       : Filter phim thành page
+p- GET /api/movies/{id}         : Lấy thông tin chi tiết phim
+- POST /api/movies/add         : Thêm phim mới (Admin)
+- PUT /api/movies/edit/{id}    : Cập nhật thông tin phim (Admin)
+
+[SHOWTIMES MANAGEMENT]
+- POST /api/showtimes/add      : Tạo suất chiếu mới (Admin) -> Tự động sinh danh sách ShowTimeSeat
+- GET /api/showtimes/filter    : Lọc suất chiếu theo cinemaId, date, movieName
+- GET /api/showtimes/movie/{id}: Lấy danh sách suất chiếu của 1 bộ phim
+- GET /api/showtimes/{id}      : Lấy chi tiết suất chiếu
+- GET /api/showtimes/{id}/seats: Lấy sơ đồ ghế và trạng thái (AVAILABLE, BOOKED) của suất chiếu
+
+[TICKET BOOKING & CANCELLATION]
+- POST /api/tickets/book       : Đặt vé mới (CreateTicketRequest -> TicketResponse status PENDING)
+- POST /api/tickets/{id}/cancel: Hủy vé đã đặt (Yêu cầu ít nhất 2 tiếng trước giờ chiếu)
+- GET /api/tickets/history     : Lấy danh sách vé đã đặt của user đang đăng nhập
+- GET /api/tickets/{id}        : Lấy thông tin vé theo ID
+- GET /api/tickets/uid/{uid}   : Lấy thông tin vé theo mã UID duy nhất
+
+[PAYMENT & EMAIL]
+- POST /api/payments/momo/create  : Tạo yêu cầu thanh toán MoMo Sandbox
+- POST /api/payments/momo/callback: Nhận callback từ MoMo

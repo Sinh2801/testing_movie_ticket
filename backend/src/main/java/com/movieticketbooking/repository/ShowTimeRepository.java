@@ -1,18 +1,12 @@
 package com.movieticketbooking.repository;
 
 import com.movieticketbooking.model.ShowTime;
-import org.springframework.data.jpa.repository.EntityGraph;
-
-import java.util.Optional;
-
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
-
-public interface ShowTimeRepository extends BaseRepository<ShowTime, Integer> {
+public interface ShowTimeRepository extends JpaRepository<ShowTime, Integer> {
     
     @Query("SELECT s FROM ShowTime s WHERE " +
            "(:cinemaId IS NULL OR s.cinema.id = :cinemaId) AND " +

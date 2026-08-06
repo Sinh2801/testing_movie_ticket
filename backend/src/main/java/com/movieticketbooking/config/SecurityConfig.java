@@ -18,6 +18,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -33,64 +39,66 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception
     {
         http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(
                         sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // AUTH
                 .requestMatchers(
-                        "/api/auth/**"
+                        apiPrefix + "/auth/**"
                 ).permitAll()
                 // GENRES
                 .requestMatchers(HttpMethod.GET,
-                        "/api/genres/**"
+                        apiPrefix + "/genres/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST,
-                        "/api/genres/add"
+                        apiPrefix + "/genres/add"
                 ).hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,
-                        "/api/genres/edit/**"
+                        apiPrefix + "/genres/edit/**"
                 ).hasRole("ADMIN")
                 // CINEMAS
                 .requestMatchers(HttpMethod.GET,
-                        "/api/cinemas/**"
+                        apiPrefix + "/cinemas/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST,
-                        "/api/cinemas/add"
+                        apiPrefix + "/cinemas/add"
                 ).hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,
-                        "/api/cinemas/edit/**"
+                        apiPrefix + "/cinemas/edit/**"
                 ).hasRole("ADMIN")
                 // MOVIES
                 .requestMatchers(HttpMethod.GET,
-                        "/api/movies/**"
+                        apiPrefix + "/movies/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST,
-                        "/api/movies/add"
+                        apiPrefix + "/movies/add"
                 ).hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,
-                        "/api/movies/edit/**"
+                        apiPrefix + "/movies/edit/**"
                 ).hasRole("ADMIN")
                 // ROOMS
                 .requestMatchers(HttpMethod.GET,
-                        "/api/rooms/**"
+                        apiPrefix + "/rooms/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST,
-                        "/api/rooms/add"
+                        apiPrefix + "/rooms/add"
                 ).hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,
-                        "/api/rooms/edit/**"
+                        apiPrefix + "/rooms/edit/**"
                 ).hasRole("ADMIN")
                 // SHOWTIMES
                 .requestMatchers(HttpMethod.GET,
-                        "/api/showtimes/**"
+                        apiPrefix + "/showtimes/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST,
-                        "/api/showtimes/add"
+                        apiPrefix + "/showtimes/add"
                 ).hasRole("ADMIN")
                 // PAYMENTS CALLBACK
                 .requestMatchers(HttpMethod.POST,
-                        "/api/payments/momo/callback"
+                        apiPrefix + "/payments/momo/callback"
                 ).permitAll()
                 // OTHER API
                 .anyRequest().authenticated()
@@ -99,6 +107,19 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean

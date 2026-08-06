@@ -19,7 +19,7 @@ public class RoomController {
     private final RoomService roomService;
 
     // Get rooms by cinema id
-    @GetMapping("/movie/{id}")
+    @GetMapping("/room/{id}")
     public ResponseEntity<ApiResponse> getByCinemaId(@PathVariable int id)
     {
         try {

@@ -7,9 +7,9 @@ import org.hibernate.validator.constraints.Length;
 
 @Data
 public class RegisterRequest {
-    @NotBlank(message = "Missing username")
-    @Length(min=3, max=20, message = "Missing username")
-    private String username;
+    @NotBlank(message = "Missing name")
+    @Length(min=3, max=20, message = "Missing name")
+    private String name;
     @NotBlank(message = "Missing email")
     @Email(message = "Invalid email")
     private String email;

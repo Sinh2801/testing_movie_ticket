@@ -5,6 +5,8 @@ import com.movieticketbooking.model.Room;
 
 import java.util.List;
 
-public interface RoomRepository extends BaseRepository<Room, Integer>{
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface RoomRepository extends JpaRepository<Room, Integer>{
     List<Room> findByCinema(Cinema cinema);
 }

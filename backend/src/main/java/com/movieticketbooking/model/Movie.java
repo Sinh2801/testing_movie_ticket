@@ -33,6 +33,7 @@ public class Movie {
 			inverseJoinColumns = @JoinColumn(name = "genre_id")
 	)
 	private List<Genre> genres;
+	@Enumerated(EnumType.STRING)
 	private MovieStatus movieStatus;
 	private LocalDateTime showAt; // ngày bắt đầu chiếu
 	private LocalDateTime createdAt;

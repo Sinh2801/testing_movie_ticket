@@ -5,7 +5,7 @@
 
 export const API_CONFIG = {
   // Configured to point directly to your Spring Boot REST API
-  BASE_URL: 'http://localhost:8080/api',
+  BASE_URL: 'http://localhost:8081/api',
   TIMEOUT: 10000,
   // Set to true to automatically fallback to Mock Engine if Spring Boot server is unreachable
   ENABLE_MOCK: true

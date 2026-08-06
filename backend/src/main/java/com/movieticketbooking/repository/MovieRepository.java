@@ -12,7 +12,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
-public interface MovieRepository extends BaseRepository<Movie, Integer> {
+public interface MovieRepository extends JpaRepository<Movie, Integer> {
     @Query("""
         SELECT DISTINCT m
         FROM Movie m

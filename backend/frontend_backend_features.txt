@@ -16,23 +16,23 @@ xác nhận qua Gmail SMTP.
 - POST /api/auth/login         : Đăng nhập tài khoản (LoginRequest -> AuthResponse + JWT)
 
 [GENRES MANAGEMENT]
-- GET /api/genres              : Lấy danh sách thể loại phim
+- GET /api/genres/all          : Lấy danh sách thể loại phim
 - POST /api/genres/add         : Thêm mới thể loại (Admin)
 - PUT /api/genres/edit/{id}    : Sửa thể loại (Admin)
 
 [CINEMAS MANAGEMENT]
 - GET /api/cinemas             : Lấy danh sách rạp chiếu phim
+- GET /api/cinemas/cinema/{id} : Lấy phim theo id
 - POST /api/cinemas/add        : Thêm cụm rạp mới (Admin)
 - PUT /api/cinemas/edit/{id}   : Sửa thông tin rạp chiếu (Admin)
 
 [ROOMS MANAGEMENT]
-- GET /api/rooms/cinema/{id}   : Lấy danh sách phòng chiếu theo ID rạp
+- GET /api/rooms/room/{id}   : Lấy danh sách phòng chiếu theo ID rạp
 - POST /api/rooms/add          : Thêm phòng chiếu mới + tự sinh sơ đồ ghế (Admin)
 - PUT /api/rooms/edit/{id}     : Sửa thông tin phòng chiếu (Admin)
 
 [MOVIES MANAGEMENT]
-- GET /api/movies              : Lấy danh sách phim đang chiếu / sắp chiếu
-- GET /api/movies/latest       : Lấy 6 phim mới nhất cho trang chủ
+- GET /api/movies/filter       : Filter phim thành page
 - GET /api/movies/{id}         : Lấy thông tin chi tiết phim
 - POST /api/movies/add         : Thêm phim mới (Admin)
 - PUT /api/movies/edit/{id}    : Cập nhật thông tin phim (Admin)

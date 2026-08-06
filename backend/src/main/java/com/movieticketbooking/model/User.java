@@ -20,12 +20,17 @@ public class User implements UserDetails {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;
-	private String username;
+	private String name;
 	private String password;
 	private String email;
 	private String phoneNumber;
 	@Enumerated(EnumType.STRING)
 	private Role role;
+
+	@Override
+	public String getUsername() {
+		return email;
+	}
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {

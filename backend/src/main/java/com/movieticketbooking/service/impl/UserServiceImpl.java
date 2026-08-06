@@ -37,7 +37,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse addUser(CreateUserRequest createUserRequest) {
         User user = new User();
-        user.setUsername(createUserRequest.getUsername());
+        user.setName(createUserRequest.getName());
         String hashPassword = passwordEncoder.encode(createUserRequest.getPassword());
         user.setPassword(hashPassword);
         user.setEmail(createUserRequest.getEmail());
@@ -53,7 +53,7 @@ public class UserServiceImpl implements UserService {
     public UserResponse updateUser(UpdateInfoUserRequest updateInfoUserRequest) {
         User user = findUserById(updateInfoUserRequest.getId());
 
-        user.setUsername(updateInfoUserRequest.getUsername());
+        user.setName(updateInfoUserRequest.getName());
         user.setEmail(updateInfoUserRequest.getEmail());
         user.setPhoneNumber(updateInfoUserRequest.getPhoneNumber());
         user.setRole(updateInfoUserRequest.getRole());
@@ -69,7 +69,7 @@ public class UserServiceImpl implements UserService {
     private UserResponse toResponse(User user) {
         UserResponse userResponse = new UserResponse();
         userResponse.setId(user.getId());
-        userResponse.setUsername(user.getUsername());
+        userResponse.setName(user.getName());
         userResponse.setEmail(user.getEmail());
         userResponse.setPhoneNumber(user.getPhoneNumber());
         userResponse.setRole(user.getRole());

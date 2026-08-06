@@ -1,12 +1,10 @@
 package com.movieticketbooking.controller;
 
-import com.movieticketbooking.model.Cinema;
 import com.movieticketbooking.request.cinema.CreateCinemaRequest;
 import com.movieticketbooking.request.cinema.UpdateCinemaRequest;
 import com.movieticketbooking.response.ApiResponse;
 import com.movieticketbooking.response.CinemaResponse;
 import com.movieticketbooking.service.CinemaService;
-import com.movieticketbooking.service.impl.CinemaServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

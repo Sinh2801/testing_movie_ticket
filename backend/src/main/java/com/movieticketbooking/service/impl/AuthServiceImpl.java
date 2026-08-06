@@ -32,7 +32,7 @@ public class AuthServiceImpl implements AuthService {
         }
         User user = new User();
         user.setEmail(email);
-        user.setUsername(request.getUsername());
+        user.setName(request.getName());
         user.setPhoneNumber(request.getPhoneNumber());
         String password = request.getPassword();
         String confirmPassword = request.getConfirmPassword();
@@ -46,7 +46,7 @@ public class AuthServiceImpl implements AuthService {
         AuthResponse authResponse = new AuthResponse();
         String jwtToken = jwtService.generateToken(user);
         authResponse.setToken(jwtToken);
-        authResponse.setUsername(saved.getUsername());
+        authResponse.setName(saved.getName());
         authResponse.setEmail(saved.getEmail());
         return authResponse;
     }
@@ -68,7 +68,7 @@ public class AuthServiceImpl implements AuthService {
 
         AuthResponse authResponse = new AuthResponse();
         authResponse.setToken(jwtToken);
-        authResponse.setUsername(user.getUsername());
+        authResponse.setName(user.getName());
         authResponse.setEmail(user.getEmail());
         return authResponse;
     }

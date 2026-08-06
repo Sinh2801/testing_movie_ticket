@@ -4,7 +4,9 @@ import com.movieticketbooking.model.Seat;
 
 import java.util.List;
 
-public interface SeatRepository extends BaseRepository<Seat, Integer>{
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface SeatRepository extends JpaRepository<Seat, Integer>{
     List<Seat> findByRoomId(int roomId);
 }
 

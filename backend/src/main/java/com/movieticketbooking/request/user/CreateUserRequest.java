@@ -8,7 +8,7 @@ import lombok.Data;
 public class CreateUserRequest {
     @NotBlank
     @Size(min = 1, max = 20)
-    private String username;
+    private String name;
     @NotBlank
     @Pattern(
             regexp = "^[a-z0-9]+$",
@@ -26,8 +26,8 @@ public class CreateUserRequest {
     private Role role;
 
     // for register
-    public CreateUserRequest(String username, String password, String email, String phoneNumber) {
-        this.username = username;
+    public CreateUserRequest(String name, String password, String email, String phoneNumber) {
+        this.name = name;
         this.password = password;
         this.email = email;
         this.phoneNumber = phoneNumber;
