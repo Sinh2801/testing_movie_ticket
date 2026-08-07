@@ -55,47 +55,47 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST,
                         apiPrefix + "/genres/add"
-                ).hasRole("ADMIN")
+                ).hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.PUT,
                         apiPrefix + "/genres/edit/**"
-                ).hasRole("ADMIN")
+                ).hasAuthority("ADMIN")
                 // CINEMAS
                 .requestMatchers(HttpMethod.GET,
                         apiPrefix + "/cinemas/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST,
                         apiPrefix + "/cinemas/add"
-                ).hasRole("ADMIN")
+                ).hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.PUT,
                         apiPrefix + "/cinemas/edit/**"
-                ).hasRole("ADMIN")
+                ).hasAuthority("ADMIN")
                 // MOVIES
                 .requestMatchers(HttpMethod.GET,
                         apiPrefix + "/movies/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST,
                         apiPrefix + "/movies/add"
-                ).hasRole("ADMIN")
+                ).hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.PUT,
                         apiPrefix + "/movies/edit/**"
-                ).hasRole("ADMIN")
+                ).hasAuthority("ADMIN")
                 // ROOMS
                 .requestMatchers(HttpMethod.GET,
                         apiPrefix + "/rooms/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST,
                         apiPrefix + "/rooms/add"
-                ).hasRole("ADMIN")
+                ).hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.PUT,
                         apiPrefix + "/rooms/edit/**"
-                ).hasRole("ADMIN")
+                ).hasAuthority("ADMIN")
                 // SHOWTIMES
                 .requestMatchers(HttpMethod.GET,
                         apiPrefix + "/showtimes/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST,
                         apiPrefix + "/showtimes/add"
-                ).hasRole("ADMIN")
+                ).hasAuthority("ADMIN")
                 // PAYMENTS CALLBACK
                 .requestMatchers(HttpMethod.POST,
                         apiPrefix + "/payments/momo/callback"

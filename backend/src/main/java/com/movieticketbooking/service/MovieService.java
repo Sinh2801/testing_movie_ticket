@@ -8,9 +8,9 @@ import com.movieticketbooking.response.MovieResponse;
 import com.movieticketbooking.response.PagedResponse;
 
 public interface MovieService {
-    PagedResponse<MovieResponse> filter(int page, int size,
-            String name, short genreId,
-            MovieStatus movieStatus, String country);
+    PagedResponse<MovieResponse> filterName(int page, int size, String name);
+    
+    PagedResponse<MovieResponse> filterStatus(int page, int size, MovieStatus movieStatus);
 
     Movie findMovieById(int id);
 

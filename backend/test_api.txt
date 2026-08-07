@@ -4,8 +4,9 @@ p- POST /api/auth/login         : Đăng nhập tài khoản (LoginRequest -> Au
 
 [GENRES MANAGEMENT]
 p- GET /api/genres/all         : Lấy danh sách thể loại phim
-- POST /api/genres/add         : Thêm mới thể loại (Admin)
-- PUT /api/genres/edit/{id}    : Sửa thể loại (Admin)
+p- GET /api/genres/gerne/{id}  : Lấy 1 thể loại phim theo id
+p- POST /api/genres/add         : Thêm mới thể loại (Admin)
+p- PUT /api/genres/edit/{id}    : Sửa thể loại (Admin)
 
 [CINEMAS MANAGEMENT]
 p- GET /api/cinemas             : Lấy danh sách rạp chiếu phim
@@ -19,9 +20,11 @@ p- GET /api/cinemas/cinema/{id} : Lấy phim theo id
 - PUT /api/rooms/edit/{id}     : Sửa thông tin phòng chiếu (Admin)
 
 [MOVIES MANAGEMENT]
-- GET /api/movies/filter       : Filter phim thành page
+p- GET /api/movies/filter       : Filter phim thành page
+p- GET /api/movies/now-showing  : Filter phim thành page đang chiếu
+p- GET /api/movies/coming-soon  : Filter phim thành page sắp chiếu
 p- GET /api/movies/{id}         : Lấy thông tin chi tiết phim
-- POST /api/movies/add         : Thêm phim mới (Admin)
+p- POST /api/movies/add         : Thêm phim mới (Admin)
 - PUT /api/movies/edit/{id}    : Cập nhật thông tin phim (Admin)
 
 [SHOWTIMES MANAGEMENT]

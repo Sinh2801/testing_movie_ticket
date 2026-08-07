@@ -29,7 +29,6 @@ public class CreateMovieRequest {
     private String imageUrl;
     @Size(min = 1)
     private List<Short> genres;
-    @NotBlank
     private MovieStatus movieStatus;
     private LocalDateTime showAt;
 }

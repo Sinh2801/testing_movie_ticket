@@ -7,8 +7,11 @@ import com.movieticketbooking.response.ApiResponse;
 import com.movieticketbooking.response.MovieResponse;
 import com.movieticketbooking.response.PagedResponse;
 import com.movieticketbooking.service.MovieService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,19 +34,46 @@ public class MovieController {
         }
     }
 
-    // Filter movie
+    // Filter movie by name
     @GetMapping("/filter")
-    public ResponseEntity<ApiResponse> filter
-            (@RequestParam int size,
-             @RequestParam int page,
-             @RequestParam String name,
-             @RequestParam short genreId,
-             @RequestParam MovieStatus movieStatus,
-             @RequestParam String country)
+    public ResponseEntity<ApiResponse> getByName
+            (@RequestParam(defaultValue = "1") int page,
+             @RequestParam(defaultValue = "10") int size,
+             @RequestParam(required = false) String name)
     {
         try {
-            PagedResponse<MovieResponse> resp = movieService.filter(
-                    size, page, name, genreId, movieStatus, country);
+            PagedResponse<MovieResponse> resp = movieService.filterName(
+                    page, size, name);
+            return ResponseEntity.ok(new ApiResponse("Get movie success", resp));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse("Get movie failed", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/now-showing")
+    public ResponseEntity<ApiResponse> getMovieNowShowing
+            (@RequestParam(defaultValue = "1") int page,
+             @RequestParam(defaultValue = "10") int size)
+    {
+        try {
+            PagedResponse<MovieResponse> resp = movieService.filterStatus(
+                    page, size, MovieStatus.NOW_SHOWING);
+            return ResponseEntity.ok(new ApiResponse("Get movie success", resp));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse("Get movie failed", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/coming-soon")
+    public ResponseEntity<ApiResponse> getMovieComingSoon
+            (@RequestParam(defaultValue = "1") int page,
+             @RequestParam(defaultValue = "10") int size)
+    {
+        try {
+            PagedResponse<MovieResponse> resp = movieService.filterStatus(
+                    page, size, MovieStatus.COMING_SOON);
             return ResponseEntity.ok(new ApiResponse("Get movie success", resp));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()

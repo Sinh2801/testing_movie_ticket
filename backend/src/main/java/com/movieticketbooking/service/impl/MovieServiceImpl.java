@@ -23,7 +23,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,27 +30,41 @@ public class MovieServiceImpl implements MovieService {
     private final MovieRepository movieRepository;
     private final GenreService genreService;
 
-    // Filter movie by name, genre, movie status, country
+    // Filter movie by name
     @Override
-    public PagedResponse<MovieResponse> filter(int page,
+    public PagedResponse<MovieResponse> filterName(int page,
             int size,
-            String name,
-            short genreId,
-            MovieStatus movieStatus,
-            String country) {
-        Genre genre = genreService.findGenreById(genreId);
-        if (genre == null)
-            throw new ResourceNotFoundException("Genre not found");
+            String name) 
+    {
+        int pageIndex = (page > 0) ? page - 1 : 0;
+        Pageable pageable = PageRequest.of(pageIndex, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Movie> moviePage = null;
+        if (name == null || name.isBlank()) {
+            moviePage = movieRepository.findAll(pageable);
+        } else {
+            moviePage = movieRepository.filter(name, null, pageable);
+        }
+        Page<MovieResponse> movieResponsePage = moviePage.map(this::toResponse);
+        return new PagedResponse<>(movieResponsePage);
+    }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date"));
-        Page<Movie> moviePage = movieRepository.filter(name, genreId, movieStatus, country, pageable);
+    // Filter movie by status
+    @Override
+    public PagedResponse<MovieResponse> filterStatus(int page,
+            int size,
+            MovieStatus movieStatus) 
+    {
+        int pageIndex = (page > 0) ? page - 1 : 0;
+        Pageable pageable = PageRequest.of(pageIndex, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Movie> moviePage = movieRepository.filter(null, movieStatus, pageable);
         Page<MovieResponse> movieResponsePage = moviePage.map(this::toResponse);
         return new PagedResponse<>(movieResponsePage);
     }
 
     // Find movie by id
     @Override
-    public Movie findMovieById(int id) {
+    public Movie findMovieById(int id) 
+    {
         Optional<Movie> movie = movieRepository.findById(id);
         if (movie.isEmpty())
             throw new ResourceNotFoundException("Movie not found");
@@ -60,13 +73,15 @@ public class MovieServiceImpl implements MovieService {
 
     // Get movie by id
     @Override
-    public MovieResponse getMovieById(int id) {
+    public MovieResponse getMovieById(int id) 
+    {
         return toResponse(findMovieById(id));
     }
 
     // Add new movie
     @Override
-    public MovieResponse addMovie(CreateMovieRequest request) {
+    public MovieResponse addMovie(CreateMovieRequest request) 
+    {
         Movie movie = new Movie();
         movie.setName(request.getName());
         movie.setDirectorName(request.getDirectorName());
@@ -89,7 +104,8 @@ public class MovieServiceImpl implements MovieService {
 
     // update movie
     @Override
-    public MovieResponse updateMovie(UpdateMovieRequest request) {
+    public MovieResponse updateMovie(UpdateMovieRequest request) 
+    {
         Optional<Movie> opt = movieRepository.findById(request.getId());
         if (opt.isEmpty())
             throw new ResourceNotFoundException("Movie not found");
@@ -109,7 +125,8 @@ public class MovieServiceImpl implements MovieService {
     }
 
     // mapper
-    private MovieResponse toResponse(Movie movie) {
+    private MovieResponse toResponse(Movie movie) 
+    {
         MovieResponse movieResponse = new MovieResponse();
         movieResponse.setId(movie.getId());
         movieResponse.setName(movie.getName());
@@ -120,6 +137,7 @@ public class MovieServiceImpl implements MovieService {
         movieResponse.setCountry(movie.getCountry());
         movieResponse.setImageUrl(movie.getImageUrl());
         movieResponse.setRating(movie.getRating());
+        movieResponse.setMovieStatus(movie.getMovieStatus());
         List<String> genres = movie.getGenres().stream()
                 .map(Genre::getName).toList();
         movieResponse.setGenres(genres);

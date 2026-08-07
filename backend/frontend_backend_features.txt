@@ -17,6 +17,7 @@ xác nhận qua Gmail SMTP.
 
 [GENRES MANAGEMENT]
 - GET /api/genres/all          : Lấy danh sách thể loại phim
+- GET /api/genres/gerne/{id}  : Lấy 1 thể loại phim theo id
 - POST /api/genres/add         : Thêm mới thể loại (Admin)
 - PUT /api/genres/edit/{id}    : Sửa thể loại (Admin)
 
@@ -32,7 +33,9 @@ xác nhận qua Gmail SMTP.
 - PUT /api/rooms/edit/{id}     : Sửa thông tin phòng chiếu (Admin)
 
 [MOVIES MANAGEMENT]
-- GET /api/movies/filter       : Filter phim thành page
+- GET /api/movies/filter       : Filter phim thành page chứa tên
+- GET /api/movies/now-showing  : Filter phim thành page đang chiếu
+- GET /api/movies/coming-soon  : Filter phim thành page sắp chiếu
 - GET /api/movies/{id}         : Lấy thông tin chi tiết phim
 - POST /api/movies/add         : Thêm phim mới (Admin)
 - PUT /api/movies/edit/{id}    : Cập nhật thông tin phim (Admin)
