@@ -28,7 +28,7 @@ xác nhận qua Gmail SMTP.
 - PUT /api/cinemas/edit/{id}   : Sửa thông tin rạp chiếu (Admin)
 
 [ROOMS MANAGEMENT]
-- GET /api/rooms/room/{id}   : Lấy danh sách phòng chiếu theo ID rạp
+- GET /api/rooms/cinema/{id}   : Lấy danh sách phòng chiếu theo ID rạp
 - POST /api/rooms/add          : Thêm phòng chiếu mới + tự sinh sơ đồ ghế (Admin)
 - PUT /api/rooms/edit/{id}     : Sửa thông tin phòng chiếu (Admin)
 

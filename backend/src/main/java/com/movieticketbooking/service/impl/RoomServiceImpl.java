@@ -29,7 +29,8 @@ public class RoomServiceImpl implements RoomService {
 
     // get room by id (for other class)
     @Override
-    public Room findRoomById(int id) {
+    public Room findRoomById(int id) 
+    {
         Optional<Room> opt = roomRepository.findById(id);
         if (opt.isEmpty())
             throw new ResourceNotFoundException("Room not found");
@@ -38,13 +39,15 @@ public class RoomServiceImpl implements RoomService {
 
     // Get room by id and convert to response (for web)
     @Override
-    public RoomResponse getRoomById(int id) {
+    public RoomResponse getRoomById(int id) 
+    {
         return toResponse(findRoomById(id));
     }
 
     // Get rooms by cinema id
     @Override
-    public List<RoomResponse> findByCinemaId(int cinemaId) {
+    public List<RoomResponse> findByCinemaId(int cinemaId) 
+    {
         Cinema cinema = cinemaService.findCinemaById(cinemaId);
         List<Room> rooms = roomRepository.findByCinema(cinema);
         return rooms.stream().map(this::toResponse).collect(Collectors.toList());
@@ -53,8 +56,18 @@ public class RoomServiceImpl implements RoomService {
     // Create room and it's seats
     @Transactional
     @Override
-    public RoomResponse createRoom(CreateRoomRequest request) {
+    public RoomResponse createRoom(CreateRoomRequest request) 
+    {
         Cinema cinema = cinemaService.findCinemaById(request.getCinemaId());
+        if(cinema == null) throw new ResourceNotFoundException("Cinema not found");
+
+        int cols = request.getNumberOfColumns();
+        int rows = request.getNumberOfRows();
+        if(cols < 1 || cols > 50) 
+            throw new IllegalArgumentException("Number of columns must be between 1 and 50");
+        if(rows < 1 || rows > 26)
+            throw new IllegalArgumentException("Number of rows must be between 1 and 26");
+
         Room room = new Room();
         room.setCinema(cinema);
         room.setName(request.getName());
@@ -70,7 +83,8 @@ public class RoomServiceImpl implements RoomService {
 
     // Update infor of room (not update seat)
     @Override
-    public RoomResponse updateRoom(UpdateRoomRequest request) {
+    public RoomResponse updateRoom(UpdateRoomRequest request) 
+    {
         Optional<Room> opt = roomRepository.findById(request.getId());
         if (opt.isEmpty())
             throw new ResourceNotFoundException("Room not found");
@@ -82,7 +96,8 @@ public class RoomServiceImpl implements RoomService {
     }
 
     // map to response
-    private RoomResponse toResponse(Room room) {
+    private RoomResponse toResponse(Room room) 
+    {
         RoomResponse response = new RoomResponse();
         response.setId(room.getId());
         response.setName(room.getName());

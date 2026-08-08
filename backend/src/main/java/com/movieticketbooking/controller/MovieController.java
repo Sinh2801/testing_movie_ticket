@@ -96,7 +96,7 @@ public class MovieController {
     }
 
     // Update movie
-    @PostMapping("/edit")
+    @PutMapping("/edit")
     public ResponseEntity<ApiResponse> updateMovie
             (@RequestBody @Valid UpdateMovieRequest request)
     {

@@ -19,7 +19,7 @@ public class RoomController {
     private final RoomService roomService;
 
     // Get rooms by cinema id
-    @GetMapping("/room/{id}")
+    @GetMapping("/cinema/{id}")
     public ResponseEntity<ApiResponse> getByCinemaId(@PathVariable int id)
     {
         try {
@@ -47,7 +47,7 @@ public class RoomController {
     }
 
     // Update room (only name and description)
-    @PutMapping("/update")
+    @PutMapping("/edit")
     public ResponseEntity<ApiResponse> updateRoom(@RequestBody @Valid UpdateRoomRequest request)
     {
         try {

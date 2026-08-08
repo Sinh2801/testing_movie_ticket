@@ -48,7 +48,7 @@ public class CinemaController {
     {
         try {
             CinemaResponse resp = cinemaService.createCinema(request);
-            return ResponseEntity.ok(new ApiResponse("Create success", null));
+            return ResponseEntity.ok(new ApiResponse("Create success", resp));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
                     .body(new ApiResponse("Can't create cinema", e.getMessage()));
@@ -61,7 +61,7 @@ public class CinemaController {
     {
         try {
             CinemaResponse resp = cinemaService.updateCinema(request);
-            return ResponseEntity.ok(new ApiResponse("Update success", null));
+            return ResponseEntity.ok(new ApiResponse("Update success", resp));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
                     .body(new ApiResponse("Can't update cinema", e.getMessage()));

@@ -2,11 +2,9 @@ package com.movieticketbooking.request.movie;
 
 import com.movieticketbooking.model.MovieStatus;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 public class UpdateMovieRequest {
@@ -23,7 +21,6 @@ public class UpdateMovieRequest {
     private String country;
     @NotBlank
     private String imageUrl;
-    @NotBlank
     private MovieStatus movieStatus;
     private LocalDateTime showAt;
 }

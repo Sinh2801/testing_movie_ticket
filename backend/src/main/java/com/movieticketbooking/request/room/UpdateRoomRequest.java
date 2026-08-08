@@ -6,7 +6,6 @@ import org.hibernate.validator.constraints.Length;
 
 @Data
 public class UpdateRoomRequest {
-    @Length(min = 1)
     private int id;
     @Length(min = 1, max = 100)
     @NotBlank
