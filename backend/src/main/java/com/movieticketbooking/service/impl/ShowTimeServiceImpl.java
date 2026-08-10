@@ -30,7 +30,8 @@ public class ShowTimeServiceImpl implements ShowTimeService {
 
     @Override
     @Transactional
-    public ShowTimeResponse createShowTime(CreateShowTimeRequest request) {
+    public ShowTimeResponse createShowTime(CreateShowTimeRequest request) 
+    {
         Cinema cinema = cinemaRepository.findById(request.getCinemaId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cinema not found with id: " + request.getCinemaId()));
 
@@ -69,30 +70,27 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         return mapToResponse(savedShowTime);
     }
 
+    // Get showtime by ID (for detail view)
     @Override
-    public ShowTimeResponse getShowTimeById(int id) {
+    public ShowTimeResponse getShowTimeById(int id) 
+    {
         ShowTime showTime = showTimeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("ShowTime not found with id: " + id));
         return mapToResponse(showTime);
     }
 
+    // Get showtimes by movie ID (for listing showtimes of a specific movie)
     @Override
-    public List<ShowTimeResponse> filterShowTimes(Integer cinemaId, LocalDate date, String movieName) {
-        LocalDateTime startTime = (date != null) ? date.atStartOfDay() : null;
-        LocalDateTime endTime = (date != null) ? date.atTime(LocalTime.MAX) : null;
-
-        List<ShowTime> list = showTimeRepository.filterShowTimes(cinemaId, startTime, endTime, movieName);
-        return list.stream().map(this::mapToResponse).collect(Collectors.toList());
-    }
-
-    @Override
-    public List<ShowTimeResponse> getShowTimesByMovieId(int movieId) {
+    public List<ShowTimeResponse> getShowTimesByMovieId(int movieId) 
+    {
         List<ShowTime> list = showTimeRepository.findByMovieId(movieId);
         return list.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
+    // Get seats by showtime ID (for seat selection)
     @Override
-    public List<ShowTimeSeatResponse> getSeatsByShowTimeId(int showTimeId) {
+    public List<ShowTimeSeatResponse> getSeatsByShowTimeId(int showTimeId) 
+    {
         List<ShowTimeSeat> seats = showTimeSeatRepository.findByShowTimeId(showTimeId);
         return seats.stream().map(sts -> ShowTimeSeatResponse.builder()
                 .id(sts.getId())
@@ -103,7 +101,9 @@ public class ShowTimeServiceImpl implements ShowTimeService {
                 .build()).collect(Collectors.toList());
     }
 
-    private ShowTimeResponse mapToResponse(ShowTime showTime) {
+    // mapper
+    private ShowTimeResponse mapToResponse(ShowTime showTime) 
+    {
         return ShowTimeResponse.builder()
                 .id(showTime.getId())
                 .price(showTime.getPrice())

@@ -26,7 +26,8 @@ public class TicketController {
 
     // Create new ticket booking
     @PostMapping("/book")
-    public ResponseEntity<ApiResponse> createTicket(@RequestBody @Valid CreateTicketRequest request) {
+    public ResponseEntity<ApiResponse> createTicket(@RequestBody @Valid CreateTicketRequest request) 
+    {
         try {
             User user = getAuthenticatedUser();
             TicketResponse response = ticketService.createTicket(user, request);
@@ -38,7 +39,8 @@ public class TicketController {
 
     // Get ticket history for logged in user
     @GetMapping("/history")
-    public ResponseEntity<ApiResponse> getUserTicketHistory() {
+    public ResponseEntity<ApiResponse> getUserTicketHistory() 
+    {
         try {
             User user = getAuthenticatedUser();
             List<TicketResponse> list = ticketService.getUserTickets(user);
@@ -50,7 +52,8 @@ public class TicketController {
 
     // Get ticket details by ID
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse> getTicketById(@PathVariable int id) {
+    public ResponseEntity<ApiResponse> getTicketById(@PathVariable int id) 
+    {
         try {
             TicketResponse response = ticketService.getTicketById(id);
             return ResponseEntity.ok(new ApiResponse("Get ticket detail success", response));
@@ -61,7 +64,8 @@ public class TicketController {
 
     // Get ticket details by UID
     @GetMapping("/uid/{uid}")
-    public ResponseEntity<ApiResponse> getTicketByUid(@PathVariable String uid) {
+    public ResponseEntity<ApiResponse> getTicketByUid(@PathVariable String uid) 
+    {
         try {
             TicketResponse response = ticketService.getTicketByUid(uid);
             return ResponseEntity.ok(new ApiResponse("Get ticket detail by UID success", response));
@@ -72,7 +76,8 @@ public class TicketController {
 
     // Cancel ticket by ID
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<ApiResponse> cancelTicket(@PathVariable int id) {
+    public ResponseEntity<ApiResponse> cancelTicket(@PathVariable int id) 
+    {
         try {
             User user = getAuthenticatedUser();
             TicketResponse response = ticketService.cancelTicket(id, user);
@@ -82,7 +87,9 @@ public class TicketController {
         }
     }
 
-    private User getAuthenticatedUser() {
+    // get user info from authentication context
+    private User getAuthenticatedUser() 
+    {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
             throw new RuntimeException("User not authenticated");

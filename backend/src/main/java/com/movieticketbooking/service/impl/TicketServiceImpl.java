@@ -31,18 +31,35 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
-    public TicketResponse createTicket(User user, CreateTicketRequest request) {
+    public TicketResponse createTicket(User user, CreateTicketRequest request) 
+    {
         ShowTime showTime = showTimeRepository.findById(request.getShowtimeId())
                 .orElseThrow(() -> new ResourceNotFoundException("ShowTime not found with id: " + request.getShowtimeId()));
 
+        if (showTime.getStartTime() == null || showTime.getStartTime().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Không thể đặt vé cho suất chiếu đã qua hoặc không hợp lệ!");
+        }
+
+        // check if the selected seats are available and not already booked
         List<ShowTimeSeat> selectedSeats = new ArrayList<>();
+        ShowTimeSeat sts = null;
+        boolean hasActiveBooking = false;
         for (Integer stsId : request.getShowtimeSeatIds()) {
-            ShowTimeSeat sts = showTimeSeatRepository.findById(stsId)
+            sts = showTimeSeatRepository.findById(stsId)
                     .orElseThrow(() -> new ResourceNotFoundException("ShowTimeSeat not found with id: " + stsId));
 
-            if (sts.getStatus() == SeatStatus.BOOKED) {
-                throw new ResourceAlreadyExistException("Seat " + sts.getSeat().getSeatName() + " has already been booked!");
+            if (sts.getStatus() != SeatStatus.AVAILABLE) {
+                throw new ResourceAlreadyExistException("Seat " + sts.getSeat().getSeatName() + " is not available!");
             }
+
+            if (sts.getTicketSeats() != null) {
+                hasActiveBooking = sts.getTicketSeats().stream()
+                        .anyMatch(ts -> ts.getCancelledAt() == null);
+                if (hasActiveBooking) {
+                    throw new ResourceAlreadyExistException("Seat " + sts.getSeat().getSeatName() + " has already been booked!");
+                }
+            }
+
             selectedSeats.add(sts);
         }
 
@@ -61,18 +78,20 @@ public class TicketServiceImpl implements TicketService {
         ticket.setUpdatedAt(LocalDateTime.now());
 
         Ticket savedTicket = ticketRepository.save(ticket);
-
+        // save ticket seats and show time seats status to BOOKED
         List<TicketSeat> ticketSeats = new ArrayList<>();
-        for (ShowTimeSeat sts : selectedSeats) {
+        for (ShowTimeSeat s : selectedSeats) {
+            s.setStatus(SeatStatus.BOOKED);
+
             TicketSeat ts = new TicketSeat();
             ts.setTicket(savedTicket);
-            ts.setShowTimeSeat(sts);
+            ts.setShowTimeSeat(s);
             ts.setCreatedAt(LocalDateTime.now());
             ticketSeats.add(ts);
         }
         ticketSeatRepository.saveAll(ticketSeats);
         savedTicket.setTicketSeats(ticketSeats);
-
+        showTimeSeatRepository.saveAll(selectedSeats);
         return mapToResponse(savedTicket);
     }
 
@@ -150,21 +169,25 @@ public class TicketServiceImpl implements TicketService {
         ticket.setStatus(TicketStatus.CANCELLED);
         ticket.setUpdatedAt(LocalDateTime.now());
         Ticket savedTicket = ticketRepository.save(ticket);
+        List<TicketSeat> ticketSeats = ticket.getTicketSeats();
+        // Revert showtime seats status back to AVAILABLE and set cancelledAt timestamp
+        if (ticketSeats != null && !ticketSeats.isEmpty()) {
+            ShowTimeSeat sts = null;
+            for (TicketSeat ts : ticketSeats) {
+                ts.setCancelledAt(LocalDateTime.now());
 
-        // Revert showtime seats status back to AVAILABLE
-        if (ticket.getTicketSeats() != null) {
-            for (TicketSeat ts : ticket.getTicketSeats()) {
-                ShowTimeSeat sts = ts.getShowTimeSeat();
+                sts = ts.getShowTimeSeat();
                 if (sts != null) {
                     sts.setStatus(SeatStatus.AVAILABLE);
                     sts.setUpdatedAt(LocalDateTime.now());
                     showTimeSeatRepository.save(sts);
                 }
             }
+            ticketSeatRepository.saveAll(ticketSeats);
         }
 
         // Send email notification
-        emailService.sendTicketCancellationEmail(savedTicket);
+        //emailService.sendTicketCancellationEmail(savedTicket);
 
         return mapToResponse(savedTicket);
     }

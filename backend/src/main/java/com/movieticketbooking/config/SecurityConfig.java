@@ -29,114 +29,113 @@ import java.util.List;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-    @Value("${api.prefix}")
-    private String apiPrefix;
+        @Value("${api.prefix}")
+        private String apiPrefix;
 
-    private final JwtAuthenticationFilter jwtAuthFilter;
-    private final UserDetailsService userDetailsService;
+        private final JwtAuthenticationFilter jwtAuthFilter;
+        private final UserDetailsService userDetailsService;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception
-    {
-        http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(
-                        sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // AUTH
-                .requestMatchers(
-                        apiPrefix + "/auth/**"
-                ).permitAll()
-                // GENRES
-                .requestMatchers(HttpMethod.GET,
-                        apiPrefix + "/genres/**"
-                ).permitAll()
-                .requestMatchers(HttpMethod.POST,
-                        apiPrefix + "/genres/add"
-                ).hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.PUT,
-                        apiPrefix + "/genres/edit/**"
-                ).hasAuthority("ADMIN")
-                // CINEMAS
-                .requestMatchers(HttpMethod.GET,
-                        apiPrefix + "/cinemas/**"
-                ).permitAll()
-                .requestMatchers(HttpMethod.POST,
-                        apiPrefix + "/cinemas/add"
-                ).hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.PUT,
-                        apiPrefix + "/cinemas/edit/**"
-                ).hasAuthority("ADMIN")
-                // MOVIES
-                .requestMatchers(HttpMethod.GET,
-                        apiPrefix + "/movies/**"
-                ).permitAll()
-                .requestMatchers(HttpMethod.POST,
-                        apiPrefix + "/movies/add"
-                ).hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.PUT,
-                        apiPrefix + "/movies/edit/**"
-                ).hasAuthority("ADMIN")
-                // ROOMS
-                .requestMatchers(HttpMethod.GET,
-                        apiPrefix + "/rooms/**"
-                ).permitAll()
-                .requestMatchers(HttpMethod.POST,
-                        apiPrefix + "/rooms/add"
-                ).hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.PUT,
-                        apiPrefix + "/rooms/edit/**"
-                ).hasAuthority("ADMIN")
-                // SHOWTIMES
-                .requestMatchers(HttpMethod.GET,
-                        apiPrefix + "/showtimes/**"
-                ).permitAll()
-                .requestMatchers(HttpMethod.POST,
-                        apiPrefix + "/showtimes/add"
-                ).hasAuthority("ADMIN")
-                // PAYMENTS CALLBACK
-                .requestMatchers(HttpMethod.POST,
-                        apiPrefix + "/payments/momo/callback"
-                ).permitAll()
-                // OTHER API
-                .anyRequest().authenticated()
-                )
-                .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                                .csrf(csrf -> csrf.disable())
+                                .sessionManagement(
+                                                sessionManagement -> sessionManagement
+                                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                                                // AUTH
+                                                .requestMatchers(
+                                                                apiPrefix + "/auth/**")
+                                                .permitAll()
+                                                // GENRES
+                                                .requestMatchers(HttpMethod.GET,
+                                                                apiPrefix + "/genres/**")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.POST,
+                                                                apiPrefix + "/genres/add")
+                                                .hasAuthority("ADMIN")
+                                                .requestMatchers(HttpMethod.PUT,
+                                                                apiPrefix + "/genres/edit/**")
+                                                .hasAuthority("ADMIN")
+                                                // CINEMAS
+                                                .requestMatchers(HttpMethod.GET,
+                                                                apiPrefix + "/cinemas/**")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.POST,
+                                                                apiPrefix + "/cinemas/add")
+                                                .hasAuthority("ADMIN")
+                                                .requestMatchers(HttpMethod.PUT,
+                                                                apiPrefix + "/cinemas/edit/**")
+                                                .hasAuthority("ADMIN")
+                                                // MOVIES
+                                                .requestMatchers(HttpMethod.GET,
+                                                                apiPrefix + "/movies/**")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.POST,
+                                                                apiPrefix + "/movies/add")
+                                                .hasAuthority("ADMIN")
+                                                .requestMatchers(HttpMethod.PUT,
+                                                                apiPrefix + "/movies/edit/**")
+                                                .hasAuthority("ADMIN")
+                                                // ROOMS
+                                                .requestMatchers(HttpMethod.GET,
+                                                                apiPrefix + "/rooms/**")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.POST,
+                                                                apiPrefix + "/rooms/add")
+                                                .hasAuthority("ADMIN")
+                                                .requestMatchers(HttpMethod.PUT,
+                                                                apiPrefix + "/rooms/edit/**")
+                                                .hasAuthority("ADMIN")
+                                                // SHOWTIMES
+                                                .requestMatchers(HttpMethod.GET,
+                                                                apiPrefix + "/showtimes/**")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.POST,
+                                                                apiPrefix + "/showtimes/add")
+                                                .hasAuthority("ADMIN")
+                                                // PAYMENTS CALLBACK
+                                                .requestMatchers(HttpMethod.POST,
+                                                                apiPrefix + "/payments/momo/callback")
+                                                .permitAll()
+                                                // OTHER API
+                                                .anyRequest().authenticated())
+                                .authenticationProvider(authenticationProvider())
+                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+                return http.build();
+        }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        @Bean
+        public CorsConfigurationSource corsConfigurationSource() {
+                CorsConfiguration configuration = new CorsConfiguration();
+                configuration.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));
+                configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                configuration.setAllowedHeaders(List.of("*"));
+                configuration.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/**", configuration);
+                return source;
+        }
 
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
+        @Bean
+        public AuthenticationProvider authenticationProvider() {
+                DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
+                authProvider.setPasswordEncoder(passwordEncoder());
+                return authProvider;
+        }
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
-    }
+        @Bean
+        public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+                return config.getAuthenticationManager();
+        }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        // Độ mạnh mã hóa mặc định là 10 (có thể chỉnh từ 4 đến 31)
-        return new BCryptPasswordEncoder();
-    }
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                // Độ mạnh mã hóa mặc định là 10 (có thể chỉnh từ 4 đến 31)
+                return new BCryptPasswordEncoder();
+        }
 }

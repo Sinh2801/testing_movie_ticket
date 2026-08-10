@@ -42,7 +42,6 @@ xác nhận qua Gmail SMTP.
 
 [SHOWTIMES MANAGEMENT]
 - POST /api/showtimes/add      : Tạo suất chiếu mới (Admin) -> Tự động sinh danh sách ShowTimeSeat
-- GET /api/showtimes/filter    : Lọc suất chiếu theo cinemaId, date, movieName
 - GET /api/showtimes/movie/{id}: Lấy danh sách suất chiếu của 1 bộ phim
 - GET /api/showtimes/{id}      : Lấy chi tiết suất chiếu
 - GET /api/showtimes/{id}/seats: Lấy sơ đồ ghế và trạng thái (AVAILABLE, BOOKED) của suất chiếu
