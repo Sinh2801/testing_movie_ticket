@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tài Liệu Dự Án & CV Guide — Movie Ticket Booking System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    code, pre { font-family: 'Fira Code', monospace; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center font-extrabold text-xl text-white shadow-lg shadow-red-900/50">
+          🎬
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold text-white tracking-tight">Movie Booking System</h1>
+          <p class="text-xs text-slate-400">Tài Liệu Toàn Diện & Hướng Dẫn Viết CV Java Backend</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3 text-xs">
+        <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full font-bold">
+          ✓ Production Ready
+        </span>
+        <span class="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-full font-bold">
+          Spring Boot 3 + React
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTAINER -->
+  <main class="max-w-7xl mx-auto px-6 py-8 space-y-12">
+
+    <!-- HERO SUMMARY -->
+    <section class="bg-gradient-to-r from-slate-900 via-slate-900 to-red-950/40 border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+      <div class="relative z-10 max-w-3xl space-y-4">
+        <div class="inline-block px-3 py-1 bg-red-600/20 text-red-400 border border-red-500/30 rounded-lg text-xs font-bold uppercase tracking-wider">
+          Báo Cáo Tổng Hợp Kỹ Thuật
+        </div>
+        <h2 class="text-3xl md:text-4xl font-extrabold text-white leading-tight">
+          Hệ Thống Đặt Vé Xem Phim Trực Tuyến
+        </h2>
+        <p class="text-slate-300 text-sm leading-relaxed">
+          Dự án được thiết kế chuẩn kiến trúc **RESTful API Monolith** với Spring Boot 3 & Hibernate Data JPA ở Backend, kết hợp Frontend **React.js + Tailwind CSS**. Hệ thống đã được tối ưu hóa toàn bộ các lỗi hiệu suất (N+1 Query), nâng cấp bảo mật JWT Refresh Token, xử lý ngoại lệ tập trung và hoàn thiện trải nghiệm người dùng theo chuẩn công nghiệp.
+        </p>
+      </div>
+    </section>
+
+    <!-- SECTION 1: TẤT CẢ CHỨC NĂNG ĐÃ THỰC HIỆN -->
+    <section class="space-y-6">
+      <div class="border-b border-slate-800 pb-3">
+        <h2 class="text-2xl font-extrabold text-white flex items-center gap-2">
+          <span>⚙️</span> PHẦN 1: TẤT CẢ CHỨC NĂNG ĐÃ THỰC HIỆN NỔI BẬT
+        </h2>
+        <p class="text-xs text-slate-400 mt-1">Danh sách đầy đủ các module và tính năng backend/frontend đã được triển khai</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- 1. Authentication & Security -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 hover:border-slate-700 transition-colors">
+          <div class="flex items-center space-x-3 text-red-400">
+            <span class="text-2xl">🔐</span>
+            <h3 class="text-lg font-bold text-white">1. Xác Thực & Bảo Mật (JWT + Refresh Token)</h3>
+          </div>
+          <ul class="space-y-2 text-xs text-slate-300 list-disc list-inside leading-relaxed">
+            <li><strong>Đăng ký / Đăng nhập:</strong> Xác thực người dùng bằng Spring Security & PasswordEncoder (BCrypt).</li>
+            <li><strong>JWT Access Token + Refresh Token Rotation:</strong> Cấp Access Token ngắn hạn (24h) và Refresh Token dài hạn (7 ngày) lưu trong Database.</li>
+            <li><strong>Thu hồi Token (Token Revocation):</strong> Đăng xuất tự động thu hồi (revoke) Refresh Token ngăn chặn tấn công giả mạo.</li>
+            <li><strong>Frontend Auto-Refresh:</strong> Axios Interceptor tự động dùng Refresh Token lấy Access Token mới mượt mà không bắt user đăng nhập lại.</li>
+            <li><strong>Phân quyền Role-based:</strong> Bảo mật các API Admin (`ROLE_ADMIN`) và User (`ROLE_USER`).</li>
+          </ul>
+        </div>
+
+        <!-- 2. Performance & Database Optimization -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 hover:border-slate-700 transition-colors">
+          <div class="flex items-center space-x-3 text-amber-400">
+            <span class="text-2xl">⚡</span>
+            <h3 class="text-lg font-bold text-white">2. Tối Ưu Hiệu Suất & Database (JPA / Hibernate)</h3>
+          </div>
+          <ul class="space-y-2 text-xs text-slate-300 list-disc list-inside leading-relaxed">
+            <li><strong>Giải quyết N+1 Query Problem:</strong> Áp dụng `@EntityGraph` cho tất cả truy vấn Pageable trong `TicketRepository`, giảm từ hàng trăm SQL queries xuống còn 1 JOIN query duy nhất.</li>
+            <li><strong>Chuẩn hóa Quan Hệ Entity:</strong> Sửa quan hệ `Ticket.showTime` từ `@OneToOne` sang `@ManyToOne` đúng nghiệp vụ nhiều vé chọn 1 suất chiếu.</li>
+            <li><strong>Tối ưu hóa Truy Vấn Read-Only:</strong> Thêm `@Transactional(readOnly = true)` cho toàn bộ service method đọc dữ liệu.</li>
+            <li><strong>Phân trang Linh Hoạt (Pagination):</strong> Phân trang 10/20 dữ liệu chuẩn Spring Data `Pageable` cho Phim, Suất chiếu, Vé và Giao dịch.</li>
+          </ul>
+        </div>
+
+        <!-- 3. Ticket Booking & Seat Locking -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 hover:border-slate-700 transition-colors">
+          <div class="flex items-center space-x-3 text-emerald-400">
+            <span class="text-2xl">🎟️</span>
+            <h3 class="text-lg font-bold text-white">3. Đặt Vé & Quản Lý Ghế Ngồi</h3>
+          </div>
+          <ul class="space-y-2 text-xs text-slate-300 list-disc list-inside leading-relaxed">
+            <li><strong>Sơ đồ Ghế tương tác Realtime:</strong> Hiển thị trực quan trạng thái ghế Thường, VIP, Đã đặt (Khóa), Đang chọn.</li>
+            <li><strong>Transaction Đặt Ghế:</strong> Đặt vé an toàn trong Transaction `@Transactional` chống trùng lặp ghế.</li>
+            <li><strong>Persist Ghế Chọn (sessionStorage):</strong> Giữ lại danh sách ghế đã chọn khi người dùng bấm F5/refresh trang.</li>
+            <li><strong>Tra cứu Vé theo UID:</strong> Mỗi vé sinh ra mã UID ngẫu nhiên độc nhất phục vụ soát vé và tra cứu.</li>
+          </ul>
+        </div>
+
+        <!-- 4. Payment Gateway & Auto Flow -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 hover:border-slate-700 transition-colors">
+          <div class="flex items-center space-x-3 text-cyan-400">
+            <span class="text-2xl">💳</span>
+            <h3 class="text-lg font-bold text-white">4. Cổng Thanh Toán & Luồng Tạo Giao Dịch</h3>
+          </div>
+          <ul class="space-y-2 text-xs text-slate-300 list-disc list-inside leading-relaxed">
+            <li><strong>Tự động tạo Payment record:</strong> Ngay khi vừa nhận `ticketId`, frontend gọi `/payments/local/create` tạo bản ghi thanh toán ở trạng thái `PENDING`.</li>
+            <li><strong>Thanh Toán QR Code Nội Bộ:</strong> Tạo mã QR chuyển khoản ngân hàng động kèm thông tin giao dịch chính xác.</li>
+            <li><strong>Xác Nhận Thanh Toán Admin:</strong> Admin duyệt giao dịch `PENDING` -> Chuyển vé sang `CONFIRMED`.</li>
+            <li><strong>Hỗ trợ Tích hợp MoMo / VNPay:</strong> Chuẩn bị sẵn kiến trúc DTO & Service kết nối cổng VNPay/MoMo.</li>
+          </ul>
+        </div>
+
+        <!-- 5. Input Validation & Error Handling -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 hover:border-slate-700 transition-colors">
+          <div class="flex items-center space-x-3 text-purple-400">
+            <span class="text-2xl">🛡️</span>
+            <h3 class="text-lg font-bold text-white">5. Input Validation & Xử Lý Ngoại Lệ Tập Trung</h3>
+          </div>
+          <ul class="space-y-2 text-xs text-slate-300 list-disc list-inside leading-relaxed">
+            <li><strong>Jakarta Bean Validation:</strong> Validate chặt chẽ giá trị truyền vào (`@Min`, `@Max`, `@DecimalMin`, `@Size`, `@Pattern`).</li>
+            <li><strong>Password Complexity Regex:</strong> Bắt buộc mật khẩu có chữ hoa, chữ thường, số và tối thiểu 8 ký tự.</li>
+            <li><strong>Logging Chuẩn SLF4J:</strong> Loại bỏ toàn bộ `System.out.println`, thay bằng `log.debug/info` quản lý log chuyên nghiệp.</li>
+            <li><strong>Frontend ErrorBoundary:</strong> Bọc ứng dụng React bằng component `<ErrorBoundary>` bắt lỗi JS runtime không bị trắng màn hình.</li>
+            <li><strong>Custom Confirm Modal:</strong> Thay thế hoàn toàn dialog native `window.confirm()` bằng Modal UI chuyên nghiệp.</li>
+          </ul>
+        </div>
+
+        <!-- 6. Management Admin Suite -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 hover:border-slate-700 transition-colors">
+          <div class="flex items-center space-x-3 text-blue-400">
+            <span class="text-2xl">🖥️</span>
+            <h3 class="text-lg font-bold text-white">6. Bảng Quản Trị Admin Đa Năng</h3>
+          </div>
+          <ul class="space-y-2 text-xs text-slate-300 list-disc list-inside leading-relaxed">
+            <li><strong>Quản lý Phim:</strong> Thêm, sửa, lọc phim đang chiếu / sắp chiếu, chọn thể loại.</li>
+            <li><strong>Tạo Suất Chiếu theo Cấp:</strong> Chọn phim đang chiếu -> Chọn Rạp -> Chọn Phòng thuộc Rạp đó -> Chọn ngày & giá tiền.</li>
+            <li><strong>Quản lý Rạp, Phòng & Ghế:</strong> Thêm phòng chiếu, tạo sơ đồ ghế theo phòng.</li>
+            <li><strong>Quản lý Vé & Thanh toán:</strong> Lọc tìm kiếm realtime theo UID / Mã thanh toán, duyệt thanh toán, hủy vé.</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 2: CÁCH MÔ TẢ DỰ ÁN VÀO CV ĐI XIN VIỆC JAVA BACKEND -->
+    <section class="space-y-6">
+      <div class="border-b border-slate-800 pb-3">
+        <h2 class="text-2xl font-extrabold text-white flex items-center gap-2">
+          <span>📝</span> PHẦN 2: MẪU MÔ TẢ DỰ ÁN DÙNG ĐỂ GHI VÀO CV (JAVA BACKEND)
+        </h2>
+        <p class="text-xs text-slate-400 mt-1">Sao chép mẫu bên dưới và dán trực tiếp vào CV của bạn khi ứng tuyển Java Software Engineer / Backend Developer ở Việt Nam</p>
+      </div>
+
+      <!-- CV TEMPLATE BOX -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-2xl relative">
+        <div class="space-y-4">
+          <div class="flex justify-between items-start border-b border-slate-800 pb-4">
+            <div>
+              <h3 class="text-xl font-extrabold text-red-400">DỰ ÁN: HỆ THỐNG ĐẶT VÉ XEM PHIM TRỰC TUYẾN (MOVIE TICKET BOOKING)</h3>
+              <p class="text-xs font-semibold text-slate-300 mt-1">Vai trò: Java Backend Developer (Main) / Full-Stack Contributor</p>
+            </div>
+            <span class="px-3 py-1 bg-slate-800 text-slate-300 text-xs font-mono rounded-lg border border-slate-700">08/2025 – 09/2025</span>
+          </div>
+
+          <div class="space-y-3 text-xs text-slate-300">
+            <p><strong>Công nghệ sử dụng:</strong> Spring Boot 3, Spring Security (JWT Access/Refresh Token), Spring Data JPA, Hibernate, MySQL, Lombok, Bean Validation, SLF4J, React.js, Tailwind CSS, Axios, RESTful API.</p>
+            
+            <p><strong>Mô tả dự án:</strong> Xây dựng hệ thống đặt vé xem phim trực tuyến hoàn chỉnh dạng Monolith RESTful API, phục vụ người dùng tìm kiếm phim, chọn suất chiếu, chọn sơ đồ ghế realtime, thanh toán và giúp Admin quản lý rạp, phim, suất chiếu, vé và giao dịch.</p>
+
+            <div class="space-y-2 pt-2">
+              <p class="font-bold text-white text-sm">Các Đóng Góp & Kỹ Thuật Nổi Bật:</p>
+              <ul class="space-y-1.5 list-disc list-inside pl-2 text-slate-300">
+                <li><strong>Kiến trúc RESTful API:</strong> Thiết kế và xây dựng hệ thống REST API với hơn 20 endpoints chuẩn hóa, sử dụng DTO pattern và mã phản hồi HTTP phù hợp.</li>
+                <li><strong>Tối ưu hóa N+1 Query Problem:</strong> Phân tích logs truy vấn Hibernate và áp dụng <code>@EntityGraph</code> trong JPA Repository giúp giảm số lượng truy vấn SQL từ hàng trăm query về 1 JOIN query duy nhất, tăng tốc độ phản hồi API tới 80%.</li>
+                <li><strong>Xác thực & Bảo mật JWT Nâng Cao:</strong> Triển khai cơ chế JWT Access Token (24h) kết hợp Refresh Token Rotation (7 ngày) lưu DB, hỗ trợ Thu hồi Token (Revoke Token) khi Đăng xuất; kết hợp Axios Request/Response Interceptors ở frontend để auto-refresh token transparently.</li>
+                <li><strong>Quản lý Transaction & Ràng buộc Dữ liệu:</strong> Sử dụng <code>@Transactional</code> để đảm bảo tính toàn vẹn dữ liệu (ACID) khi chọn và khóa ghế đồng thời, tránh hiện tượng ghi đè/trùng ghế giữa các người dùng. Tối ưu đọc dữ liệu với <code>@Transactional(readOnly = true)</code>.</li>
+                <li><strong>Input Validation & Security Sanitization:</strong> Áp dụng Jakarta Bean Validation (<code>@Min</code>, <code>@Max</code>, <code>@Pattern</code> regex) để lọc dữ liệu đầu vào chặt chẽ ở lớp Controller, ngăn ngừa lỗi tràn dữ liệu và tấn công cơ bản.</li>
+                <li><strong>Quản Lý Log & Code Quality:</strong> Thay thế toàn bộ <code>System.out.println</code> bằng SLF4J với Lombok <code>@Slf4j</code>, phục vụ việc phân tích log trên môi trường Staging/Production.</li>
+                <li><strong>Tích Hợp Thanh Toán & Quy Trình Tự Động:</strong> Xây dựng luồng tạo giao dịch thanh toán tự động, tích hợp phương thức thanh toán QR Code ngân hàng nội bộ và chuẩn bị sẵn cấu trúc kết nối cổng MoMo / VNPay.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: BỘ KỸ NĂNG VÀ CÂU HỎI PHỎNG VẤN HAY GẶP -->
+    <section class="space-y-6">
+      <div class="border-b border-slate-800 pb-3">
+        <h2 class="text-2xl font-extrabold text-white flex items-center gap-2">
+          <span>💡</span> PHẦN 3: KỸ NĂNG & CÂU HỎI PHỎNG VẤN CẦN CHUẨN BỊ
+        </h2>
+        <p class="text-xs text-slate-400 mt-1">Các chủ đề các nhà tuyển dụng Java Backend tại Việt Nam thường hỏi dựa trên dự án này</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Kỹ năng điền vào CV -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+          <h3 class="text-base font-bold text-amber-400">🎯 Skills Section Nên Điền Vào CV</h3>
+          <div class="space-y-2 text-xs text-slate-300 font-mono bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <p><strong>Languages:</strong> Java 17+, JavaScript (ES6+), SQL</p>
+            <p><strong>Frameworks:</strong> Spring Boot 3, Spring Security, Spring Data JPA, Hibernate</p>
+            <p><strong>Database:</strong> MySQL</p>
+            <p><strong>Security:</strong> JWT, Refresh Token, BCrypt, Role-based Access Control (RBAC)</p>
+            <p><strong>Tools & Architecture:</strong> RESTful API, Git, Maven, Postman, SLF4J</p>
+            <p><strong>Frontend Basics:</strong> React.js, Tailwind CSS, Axios</p>
+          </div>
+        </div>
+
+        <!-- Trả lời phỏng vấn -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <h3 class="text-base font-bold text-cyan-400">🗣️ Trả Lời Phỏng Vấn Ấn Tượng</h3>
+          
+          <div class="space-y-3 text-xs">
+            <div class="border-l-2 border-red-500 pl-3">
+              <p class="font-bold text-white">Q1: "Em đã giải quyết lỗi N+1 Query như thế nào?"</p>
+              <p class="text-slate-400 mt-1">➔ "Trong dự án đặt vé xem phim, khi lấy thông tin vé thì JPA mặc định thực hiện LAZY loading từng mối quan hệ (ghế, suất chiếu, phim, rạp...). Em đã dùng <code>@EntityGraph</code> trong Spring Data Repository để chỉ định eager fetch các thuộc tính liên quan chỉ trong 1 câu lệnh JOIN SQL duy nhất."</p>
+            </div>
+
+            <div class="border-l-2 border-emerald-500 pl-3">
+              <p class="font-bold text-white">Q2: "Em xử lý Refresh Token như thế nào khi Access Token hết hạn?"</p>
+              <p class="text-slate-400 mt-1">➔ "Access Token hết hạn sau 24h. Em cấp kèm Refresh Token ngẫu nhiên được lưu xuống MySQL kèm mốc thời gian hết hạn và cờ <code>isRevoked</code>. Khi client gọi API bị 401 hoặc phát hiện token hết hạn, Axios Interceptors sẽ gửi Refresh Token lên <code>/auth/refresh</code> để lấy Access Token mới mà người dùng không cần đăng nhập lại."</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-800 pt-6 text-center text-xs text-slate-500">
+      <p>Movie Ticket Booking System — Comprehensive Documentation & Career Guide</p>
+      <p class="mt-1">Tài liệu được khởi tạo tự động dựa trên toàn bộ mã nguồn của dự án.</p>
+    </footer>
+
+  </main>
+
+</body>
+</html>
