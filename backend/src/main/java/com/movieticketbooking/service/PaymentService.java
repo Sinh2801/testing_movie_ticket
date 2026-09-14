@@ -1,19 +1,13 @@
 package com.movieticketbooking.service;
 
-import java.util.Map;
-
-import com.movieticketbooking.request.payment.MoMoPaymentRequest;
-import com.movieticketbooking.request.payment.VnPayPaymentRequest;
+import com.movieticketbooking.request.payment.LocalPaymentRequest;
+import com.movieticketbooking.response.PagedResponse;
+import com.movieticketbooking.response.PaymentDetailResponse;
 import com.movieticketbooking.response.PaymentResponse;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 public interface PaymentService {
-    PaymentResponse createMoMoPaymentUrl(MoMoPaymentRequest request);
+    PagedResponse<PaymentDetailResponse> getPagedPayments(int page, int size, String transactionId);
+    PaymentResponse createLocalPaymentUrl(LocalPaymentRequest request);
 
-    PaymentResponse processMoMoCallback(String transactionId, String responseCode, int ticketId);
-
-    PaymentResponse createVnPayPaymentUrl(VnPayPaymentRequest request, HttpServletRequest httpRequest);
-
-    PaymentResponse processVnPayCallback(Map<String, String> queryParams);
+    PaymentResponse confirmLocalPayment(int ticketId);
 }

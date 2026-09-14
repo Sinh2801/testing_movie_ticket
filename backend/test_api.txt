@@ -1,45 +1,50 @@
 [AUTHENTICATION]
-p- POST /api/auth/register      : Đăng ký tài khoản (RegisterRequest -> AuthResponse + JWT) 
+p- POST /auth/register      : Đăng ký tài khoản (RegisterRequest -> AuthResponse + JWT) 
 p- POST /api/auth/login         : Đăng nhập tài khoản (LoginRequest -> AuthResponse + JWT) 
 
 [GENRES MANAGEMENT]
-p- GET /api/genres/all         : Lấy danh sách thể loại phim
-p- GET /api/genres/gerne/{id}  : Lấy 1 thể loại phim theo id
-p- POST /api/genres/add         : Thêm mới thể loại (Admin)
-p- PUT /api/genres/edit/{id}    : Sửa thể loại (Admin)
+p- GET /genres/all         : Lấy danh sách thể loại phim
+p- GET /genres/gerne/{id}  : Lấy 1 thể loại phim theo id
+p- POST /genres/add         : Thêm mới thể loại (Admin)
+p- PUT /genres/edit/{id}    : Sửa thể loại (Admin)
 
 [CINEMAS MANAGEMENT]
-p- GET /api/cinemas             : Lấy danh sách rạp chiếu phim
-p- GET /api/cinemas/cinema/{id} : Lấy phim theo id
-p- POST /api/cinemas/add        : Thêm cụm rạp mới (Admin)
-p- PUT /api/cinemas/edit   : Sửa thông tin rạp chiếu (Admin)
+p- GET /cinemas             : Lấy danh sách rạp chiếu phim
+p- GET /cinemas/cinema/{id} : Lấy phim theo id
+p- POST /cinemas/add        : Thêm cụm rạp mới (Admin)
+p- PUT /cinemas/edit   : Sửa thông tin rạp chiếu (Admin)
 
 [ROOMS MANAGEMENT]
-p- GET /api/rooms/cinema/{id}   : Lấy danh sách phòng chiếu theo ID rạp
-p- POST /api/rooms/add          : Thêm phòng chiếu mới + tự sinh sơ đồ ghế (Admin)
-p- PUT /api/rooms/edit     : Sửa thông tin phòng chiếu (Admin)
+p- GET /rooms/cinema/{id}   : Lấy danh sách phòng chiếu theo ID rạp
+p- POST /rooms/add          : Thêm phòng chiếu mới + tự sinh sơ đồ ghế (Admin)
+p- PUT /rooms/edit     : Sửa thông tin phòng chiếu (Admin)
 
 [MOVIES MANAGEMENT]
-p- GET /api/movies/filter       : Filter phim thành page
-p- GET /api/movies/now-showing  : Filter phim thành page đang chiếu
-p- GET /api/movies/coming-soon  : Filter phim thành page sắp chiếu
-p- GET /api/movies/{id}         : Lấy thông tin chi tiết phim
-p- POST /api/movies/add         : Thêm phim mới (Admin)
-p- PUT /api/movies/edit/{id}    : Cập nhật thông tin phim (Admin)
+p- GET /movies/filter       : Filter phim thành page
+p- GET /movies/now-showing  : Filter phim thành page đang chiếu
+p- GET /movies/coming-soon  : Filter phim thành page sắp chiếu
+p- GET /movies/{id}         : Lấy thông tin chi tiết phim
+p- POST /movies/add         : Thêm phim mới (Admin)
+p- PUT /movies/edit/{id}    : Cập nhật thông tin phim (Admin)
 
 [SHOWTIMES MANAGEMENT]
-p- POST /api/showtimes/add       : Tạo suất chiếu mới (Admin) -> Tự động sinh danh sách ShowTimeSeat
-p- GET /api/showtimes/movie/{id}: Lấy danh sách suất chiếu của 1 bộ phim
-p- GET /api/showtimes/{id}      : Lấy chi tiết suất chiếu
-p- GET /api/showtimes/{id}/seats: Lấy sơ đồ ghế và trạng thái (AVAILABLE, BOOKED) của suất chiếu
+p- POST /showtimes/add       : Tạo suất chiếu mới (Admin) -> Tự động sinh danh sách ShowTimeSeat
+p- GET /showtimes/movie/{id}: Lấy danh sách suất chiếu của 1 bộ phim
+p- GET /showtimes/{id}      : Lấy chi tiết suất chiếu
+p- GET /showtimes/{id}/seats: Lấy sơ đồ ghế và trạng thái (AVAILABLE, BOOKED) của suất chiếu
+- GET /showtimes/filter     : Tìm suất chiếu phân trang
 
 [TICKET BOOKING & CANCELLATION]
-p- POST /api/tickets/book       : Đặt vé mới (CreateTicketRequest -> TicketResponse status PENDING)
-p- POST /api/tickets/{id}/cancel: Hủy vé đã đặt (Yêu cầu ít nhất 2 tiếng trước giờ chiếu)
-p- GET /api/tickets/history     : Lấy danh sách vé đã đặt của user đang đăng nhập
-p- GET /api/tickets/{id}        : Lấy thông tin vé theo ID
-p- GET /api/tickets/uid/{uid}   : Lấy thông tin vé theo mã UID duy nhất
+p- POST /tickets/book       : Đặt vé mới (CreateTicketRequest -> TicketResponse status PENDING)
+p- POST /tickets/{id}/cancel: Hủy vé đã đặt (Yêu cầu ít nhất 2 tiếng trước giờ chiếu)
+p- GET /tickets/history     : Lấy danh sách vé đã đặt của user đang đăng nhập
+p- GET /tickets/{id}        : Lấy thông tin vé theo ID
+p- GET /tickets/uid/{uid}   : Lấy thông tin vé theo mã UID duy nhất
+- GET /tickets/filter      : Tìm vé theo uid và phân trang
 
 [PAYMENT & EMAIL]
-- POST /api/payments/momo/create  : Tạo yêu cầu thanh toán MoMo Sandbox
-- POST /api/payments/momo/callback: Nhận callback từ MoMo
+- POST /payments/local/create  : Tạo yêu cầu thanh toán
+- POST /payments/local/confirm : Xác nhận thanh toán đồng thời xác nhận vé
+- GET /payments/filter         : Tìm thanh toán theo paymentCode
+- POST /payments/stripe/create-payment-intent: Tạo thanh toán bằng payment
+- POST /payments/stripe/confirm              : Xác nhận thanh toán bằng stripe

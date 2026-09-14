@@ -7,7 +7,6 @@ import com.movieticketbooking.response.ShowTimeSeatResponse;
 import com.movieticketbooking.service.ShowTimeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,47 +24,42 @@ public class ShowTimeController {
     @PostMapping("/add")
     public ResponseEntity<ApiResponse> createShowTime(@RequestBody @Valid CreateShowTimeRequest request) 
     {
-        try {
-            ShowTimeResponse resp = showTimeService.createShowTime(request);
-            return ResponseEntity.ok(new ApiResponse("Create showtime success", resp));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(new ApiResponse("Create showtime failed: " + e.getMessage(), null));
-        }
+        ShowTimeResponse resp = showTimeService.createShowTime(request);
+        return ResponseEntity.ok(new ApiResponse("Create showtime success", resp));
+    }
+
+    // Pagination and filtering of showtimes
+    @GetMapping("/filter")
+    public ResponseEntity<ApiResponse> filter(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        List<ShowTimeResponse> list = showTimeService.filter(page, size);
+        return ResponseEntity.ok(new ApiResponse("Filter showtimes success", list));
     }
 
     // Get showtimes by movie ID
     @GetMapping("/movie/{movieId}")
     public ResponseEntity<ApiResponse> getShowTimesByMovieId(@PathVariable int movieId) 
     {
-        try {
-            List<ShowTimeResponse> list = showTimeService.getShowTimesByMovieId(movieId);
-            return ResponseEntity.ok(new ApiResponse("Get showtimes by movie success", list));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(new ApiResponse("Get showtimes by movie failed: " + e.getMessage(), null));
-        }
+        List<ShowTimeResponse> list = showTimeService.getShowTimesByMovieId(movieId);
+        return ResponseEntity.ok(new ApiResponse("Get showtimes by movie success", list));
     }
+
 
     // Get showtime by ID
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse> getShowTimeById(@PathVariable int id) 
     {
-        try {
-            ShowTimeResponse resp = showTimeService.getShowTimeById(id);
-            return ResponseEntity.ok(new ApiResponse("Get showtime detail success", resp));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(new ApiResponse("Get showtime detail failed: " + e.getMessage(), null));
-        }
+        ShowTimeResponse resp = showTimeService.getShowTimeById(id);
+        return ResponseEntity.ok(new ApiResponse("Get showtime detail success", resp));
     }
 
     // Get seats map by showtime ID
     @GetMapping("/{id}/seats")
     public ResponseEntity<ApiResponse> getSeatsByShowTimeId(@PathVariable int id) 
     {
-        try {
-            List<ShowTimeSeatResponse> seats = showTimeService.getSeatsByShowTimeId(id);
-            return ResponseEntity.ok(new ApiResponse("Get showtime seats success", seats));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(new ApiResponse("Get showtime seats failed: " + e.getMessage(), null));
-        }
+        List<ShowTimeSeatResponse> seats = showTimeService.getSeatsByShowTimeId(id);
+        return ResponseEntity.ok(new ApiResponse("Get showtime seats success", seats));
     }
 }

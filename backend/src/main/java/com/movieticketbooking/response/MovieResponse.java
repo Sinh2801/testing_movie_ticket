@@ -3,11 +3,14 @@ package com.movieticketbooking.response;
 import com.movieticketbooking.model.MovieStatus;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-public class MovieResponse {
+public class MovieResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private int id;
     private String name;
     private String directorName;

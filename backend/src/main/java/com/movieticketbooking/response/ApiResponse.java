@@ -1,12 +1,10 @@
 package com.movieticketbooking.response;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 @AllArgsConstructor
-@Getter
-@Setter
+@Data
 public class ApiResponse {
     private String message;
     private Object data;

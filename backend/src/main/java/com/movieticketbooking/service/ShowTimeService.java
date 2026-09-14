@@ -11,4 +11,5 @@ public interface ShowTimeService {
     ShowTimeResponse getShowTimeById(int id);
     List<ShowTimeResponse> getShowTimesByMovieId(int movieId);
     List<ShowTimeSeatResponse> getSeatsByShowTimeId(int showTimeId);
+    List<ShowTimeResponse> filter(int page, int size);
 }

@@ -8,7 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class MoMoPaymentRequest {
+public class StripePaymentRequest {
     @NotNull(message = "Ticket ID is required")
     private Integer ticketId;
 }

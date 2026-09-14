@@ -4,10 +4,13 @@ import com.movieticketbooking.model.Payment;
 
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PaymentRepository extends JpaRepository<Payment, Integer> {
     Optional<Payment> findByTicketId(int ticketId);
     Optional<Payment> findByTransactionId(String transactionId);
+    Page<Payment> findByPaymentCodeContaining(String paymentCode, Pageable pageable);
 }
 

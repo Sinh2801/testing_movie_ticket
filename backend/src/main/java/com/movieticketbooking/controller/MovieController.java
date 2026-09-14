@@ -11,7 +11,6 @@ import com.movieticketbooking.service.MovieService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,13 +24,8 @@ public class MovieController {
     @GetMapping("/movie/{id}")
     public ResponseEntity<ApiResponse> getById(@PathVariable Integer id)
     {
-        try {
-            MovieResponse resp = movieService.getMovieById(id);
-            return ResponseEntity.ok(new ApiResponse("Get movie success", resp));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Get movie failed", e.getMessage()));
-        }
+        MovieResponse resp = movieService.getMovieById(id);
+        return ResponseEntity.ok(new ApiResponse("Get movie success", resp));
     }
 
     // Filter movie by name
@@ -41,14 +35,9 @@ public class MovieController {
              @RequestParam(defaultValue = "10") int size,
              @RequestParam(required = false) String name)
     {
-        try {
-            PagedResponse<MovieResponse> resp = movieService.filterName(
+        PagedResponse<MovieResponse> resp = movieService.filterName(
                     page, size, name);
-            return ResponseEntity.ok(new ApiResponse("Get movie success", resp));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Get movie failed", e.getMessage()));
-        }
+        return ResponseEntity.ok(new ApiResponse("Get movie success", resp));
     }
 
     @GetMapping("/now-showing")
@@ -56,14 +45,9 @@ public class MovieController {
             (@RequestParam(defaultValue = "1") int page,
              @RequestParam(defaultValue = "10") int size)
     {
-        try {
-            PagedResponse<MovieResponse> resp = movieService.filterStatus(
+        PagedResponse<MovieResponse> resp = movieService.filterStatus(
                     page, size, MovieStatus.NOW_SHOWING);
-            return ResponseEntity.ok(new ApiResponse("Get movie success", resp));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Get movie failed", e.getMessage()));
-        }
+        return ResponseEntity.ok(new ApiResponse("Get movie success", resp));
     }
 
     @GetMapping("/coming-soon")
@@ -71,14 +55,9 @@ public class MovieController {
             (@RequestParam(defaultValue = "1") int page,
              @RequestParam(defaultValue = "10") int size)
     {
-        try {
-            PagedResponse<MovieResponse> resp = movieService.filterStatus(
+        PagedResponse<MovieResponse> resp = movieService.filterStatus(
                     page, size, MovieStatus.COMING_SOON);
-            return ResponseEntity.ok(new ApiResponse("Get movie success", resp));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Get movie failed", e.getMessage()));
-        }
+        return ResponseEntity.ok(new ApiResponse("Get movie success", resp));
     }
 
     // Add new movie
@@ -86,13 +65,8 @@ public class MovieController {
     public ResponseEntity<ApiResponse> addMovie
             (@RequestBody @Valid CreateMovieRequest request)
     {
-        try {
-            MovieResponse resp = movieService.addMovie(request);
-            return ResponseEntity.ok(new ApiResponse("Add movie success", resp));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Add movie failed", e.getMessage()));
-        }
+        MovieResponse resp = movieService.addMovie(request);
+        return ResponseEntity.ok(new ApiResponse("Add movie success", resp));
     }
 
     // Update movie
@@ -100,12 +74,7 @@ public class MovieController {
     public ResponseEntity<ApiResponse> updateMovie
             (@RequestBody @Valid UpdateMovieRequest request)
     {
-        try {
-            MovieResponse resp = movieService.updateMovie(request);
-            return ResponseEntity.ok(new ApiResponse("Update movie success", resp));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Update movie failed", e.getMessage()));
-        }
+        MovieResponse resp = movieService.updateMovie(request);
+        return ResponseEntity.ok(new ApiResponse("Update movie success", resp));
     }
 }

@@ -22,41 +22,23 @@ public class RoomController {
     @GetMapping("/cinema/{id}")
     public ResponseEntity<ApiResponse> getByCinemaId(@PathVariable int id)
     {
-        try {
-            List<RoomResponse> rooms = roomService.findByCinemaId(id);
-            return ResponseEntity.ok()
-                    .body(new ApiResponse("Get room success", rooms));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Get room failed", e.getMessage()));
-        }
+        List<RoomResponse> rooms = roomService.findByCinemaId(id);
+        return ResponseEntity.ok(new ApiResponse("Get room success", rooms));
     }
 
     // Create new room
     @PostMapping("/add")
     public ResponseEntity<ApiResponse> createRoom(@RequestBody @Valid CreateRoomRequest request)
     {
-        try {
-            RoomResponse roomResponse = roomService.createRoom(request);
-            return ResponseEntity.ok()
-                    .body(new ApiResponse("Create room success", roomResponse));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Create room failed", e.getMessage()));
-        }
+        RoomResponse roomResponse = roomService.createRoom(request);
+            return ResponseEntity.ok(new ApiResponse("Create room success", roomResponse));
     }
 
     // Update room (only name and description)
     @PutMapping("/edit")
     public ResponseEntity<ApiResponse> updateRoom(@RequestBody @Valid UpdateRoomRequest request)
     {
-        try {
-            RoomResponse roomResponse = roomService.updateRoom(request);
-            return ResponseEntity.ok()
-                    .body(new ApiResponse("Update room success", roomResponse));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Update room failed", e.getMessage()));
-        }
+        RoomResponse roomResponse = roomService.updateRoom(request);
+            return ResponseEntity.ok(new ApiResponse("Update room success", roomResponse));
     }
 }

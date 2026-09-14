@@ -23,51 +23,31 @@ public class GenreController {
     @GetMapping("/all")
     public ResponseEntity<ApiResponse> getAll()
     {
-        try {
-            List<GenreResponse> genres = genreService.getAllGenres();
-            return ResponseEntity.ok(new ApiResponse("Get all genres success", genres));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Get all genres failed", e.getMessage()));
-        }
+        List<GenreResponse> genres = genreService.getAllGenres();
+        return ResponseEntity.ok(new ApiResponse("Get all genres success", genres));
     }
 
     // Get by id
     @GetMapping("/genre/{id}")
     public ResponseEntity<ApiResponse> getById(@PathVariable short id)
     {
-        try {
-            GenreResponse genre = genreService.getById(id);
-            return ResponseEntity.ok(new ApiResponse("Get genre success", genre));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Get genre failed", e.getMessage()));
-        }
+        GenreResponse genre = genreService.getById(id);
+        return ResponseEntity.ok(new ApiResponse("Get genre success", genre));
     }
 
     // Add new genre
     @PostMapping("/add")
     public ResponseEntity<ApiResponse> addGenre(@RequestBody @Valid CreateGenreRequest request)
     {
-        try {
-            GenreResponse genre = genreService.addGenre(request);
-            return ResponseEntity.ok(new ApiResponse("Create genre success", genre));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Create genre failed", e.getMessage()));
-        }
+        GenreResponse genre = genreService.addGenre(request);
+        return ResponseEntity.ok(new ApiResponse("Create genre success", genre));
     }
 
     // Update genre
     @PutMapping("/edit")
     public ResponseEntity<ApiResponse> updateGenre(@RequestBody @Valid UpdateGenreRequest request)
     {
-        try {
-            GenreResponse genre = genreService.updateGenre(request);
-            return ResponseEntity.ok(new ApiResponse("Update genre success", genre));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Update genre failed", e.getMessage()));
-        }
+        GenreResponse genre = genreService.updateGenre(request);
+        return ResponseEntity.ok(new ApiResponse("Update genre success", genre));
     }
 }

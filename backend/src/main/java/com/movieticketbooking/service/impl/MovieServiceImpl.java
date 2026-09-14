@@ -4,16 +4,17 @@ import com.movieticketbooking.exception.ResourceNotFoundException;
 import com.movieticketbooking.model.Genre;
 import com.movieticketbooking.model.Movie;
 import com.movieticketbooking.model.MovieStatus;
-import com.movieticketbooking.repository.GenreRepository;
 import com.movieticketbooking.repository.MovieRepository;
 import com.movieticketbooking.request.movie.CreateMovieRequest;
 import com.movieticketbooking.request.movie.UpdateMovieRequest;
-import com.movieticketbooking.response.GenreResponse;
 import com.movieticketbooking.response.MovieResponse;
 import com.movieticketbooking.response.PagedResponse;
 import com.movieticketbooking.service.GenreService;
 import com.movieticketbooking.service.MovieService;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -71,7 +72,8 @@ public class MovieServiceImpl implements MovieService {
         return movie.get();
     }
 
-    // Get movie by id
+    // Get movie by id (Cache dữ liệu MovieResponse vào Redis)
+    @Cacheable(value = "movies", key = "'movie:' + #id")
     @Override
     public MovieResponse getMovieById(int id) 
     {
@@ -79,6 +81,7 @@ public class MovieServiceImpl implements MovieService {
     }
 
     // Add new movie
+    @CacheEvict(value = "movies", allEntries = true)
     @Override
     public MovieResponse addMovie(CreateMovieRequest request) 
     {
@@ -90,11 +93,14 @@ public class MovieServiceImpl implements MovieService {
         movie.setDuration(request.getDuration());
         movie.setCountry(request.getCountry());
         movie.setImageUrl(request.getImageUrl());
-        List<Genre> genres = request.getGenres()
-                .stream()
-                .map(genreService::findGenreById)
-                .toList();
-        movie.setGenres(genres);
+        movie.setMovieStatus(request.getMovieStatus() != null ? request.getMovieStatus() : MovieStatus.NOW_SHOWING);
+        if (request.getGenres() != null) {
+            List<Genre> genres = request.getGenres()
+                    .stream()
+                    .map(genreService::findGenreById)
+                    .toList();
+            movie.setGenres(genres);
+        }
         movie.setShowAt(request.getShowAt());
         movie.setCreatedAt(LocalDateTime.now());
 
@@ -103,6 +109,7 @@ public class MovieServiceImpl implements MovieService {
     }
 
     // update movie
+    @CacheEvict(value = "movies", key = "'movie:' + #request.id")
     @Override
     public MovieResponse updateMovie(UpdateMovieRequest request) 
     {
@@ -118,6 +125,9 @@ public class MovieServiceImpl implements MovieService {
         movie.setDuration(request.getDuration());
         movie.setCountry(request.getCountry());
         movie.setImageUrl(request.getImageUrl());
+        if (request.getMovieStatus() != null) {
+            movie.setMovieStatus(request.getMovieStatus());
+        }
         movie.setShowAt(request.getShowAt());
 
         Movie saved = movieRepository.save(movie);

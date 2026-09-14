@@ -6,10 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @NoArgsConstructor
@@ -24,6 +22,7 @@ public class Ticket {
 	private String uid;
 
 	private BigDecimal totalPrice;
+	@Enumerated(EnumType.STRING)
 	private TicketStatus status;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
@@ -31,7 +30,7 @@ public class Ticket {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "user_id")
 	private User user;
-	@OneToOne(fetch = FetchType.LAZY)
+	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "showtime_id")
 	private ShowTime showTime;
 	@OneToMany(mappedBy = "ticket")

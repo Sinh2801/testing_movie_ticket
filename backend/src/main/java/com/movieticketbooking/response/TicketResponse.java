@@ -2,7 +2,6 @@ package com.movieticketbooking.response;
 
 import com.movieticketbooking.model.TicketStatus;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,7 +14,6 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class TicketResponse {
     private int id;
     private String uid;

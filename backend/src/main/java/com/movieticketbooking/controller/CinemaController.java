@@ -21,50 +21,30 @@ public class CinemaController {
     @GetMapping("/cinema/{id}")
     public ResponseEntity<ApiResponse> getById(@PathVariable int id)
     {
-        try {
-            CinemaResponse cinema = cinemaService.getCinemaById(id);
-            return ResponseEntity.ok(new ApiResponse("Get success", cinema));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Can't get cinema", e.getMessage()));
-        }
+        CinemaResponse cinema = cinemaService.getCinemaById(id);
+        return ResponseEntity.ok(new ApiResponse("Get success", cinema));
     }
 
     @GetMapping("/all")
     public ResponseEntity<ApiResponse> getAllCinemas()
     {
-        try {
-            List<CinemaResponse> cinemas = cinemaService.getAllCinemas();
-            return ResponseEntity.ok(new ApiResponse("Get all success", cinemas));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Can't get all cinema", e.getMessage()));
-        }
+        List<CinemaResponse> cinemas = cinemaService.getAllCinemas();
+        return ResponseEntity.ok(new ApiResponse("Get all success", cinemas));
     }
 
     @PostMapping("/add")
     public ResponseEntity<ApiResponse> addCinema(
             @RequestBody @Valid CreateCinemaRequest request)
     {
-        try {
-            CinemaResponse resp = cinemaService.createCinema(request);
-            return ResponseEntity.ok(new ApiResponse("Create success", resp));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Can't create cinema", e.getMessage()));
-        }
+        CinemaResponse resp = cinemaService.createCinema(request);
+        return ResponseEntity.ok(new ApiResponse("Create success", resp));
     }
 
     @PutMapping("/edit")
     public ResponseEntity<ApiResponse> updateCinema(
             @RequestBody @Valid UpdateCinemaRequest request)
     {
-        try {
-            CinemaResponse resp = cinemaService.updateCinema(request);
-            return ResponseEntity.ok(new ApiResponse("Update success", resp));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse("Can't update cinema", e.getMessage()));
-        }
+        CinemaResponse resp = cinemaService.updateCinema(request);
+        return ResponseEntity.ok(new ApiResponse("Update success", resp));
     }
 }

@@ -8,6 +8,11 @@ import com.movieticketbooking.response.ShowTimeResponse;
 import com.movieticketbooking.response.ShowTimeSeatResponse;
 import com.movieticketbooking.service.ShowTimeService;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -101,6 +106,16 @@ public class ShowTimeServiceImpl implements ShowTimeService {
                 .build()).collect(Collectors.toList());
     }
 
+    @Override
+    public List<ShowTimeResponse> filter(int page, int size) 
+    {
+        int pageIndex = (page > 0) ? page - 1 : 0;
+        Pageable pageable = PageRequest.of(pageIndex, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<ShowTime> showTimePage = showTimeRepository.findAll(pageable);
+        List<ShowTime> list = showTimePage.getContent();
+        return list.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+    
     // mapper
     private ShowTimeResponse mapToResponse(ShowTime showTime) 
     {

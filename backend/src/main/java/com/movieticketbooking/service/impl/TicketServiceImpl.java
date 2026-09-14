@@ -5,10 +5,17 @@ import com.movieticketbooking.exception.ResourceNotFoundException;
 import com.movieticketbooking.model.*;
 import com.movieticketbooking.repository.*;
 import com.movieticketbooking.request.ticket.CreateTicketRequest;
+import com.movieticketbooking.response.PagedResponse;
 import com.movieticketbooking.response.TicketResponse;
 import com.movieticketbooking.service.EmailService;
 import com.movieticketbooking.service.TicketService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +26,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TicketServiceImpl implements TicketService {
@@ -29,6 +37,15 @@ public class TicketServiceImpl implements TicketService {
     private final TicketSeatRepository ticketSeatRepository;
     private final EmailService emailService;
 
+    private final int CANCEL_TICKET_HOURS_LIMIT = 2;
+
+    // Create new ticket booking
+    // flow:
+    // 1. Get showtime by id and check if it exists and not expired
+    // 2. Get showtime seats by ids and check if they are available and not already booked
+    // 3. Create a new ticket with status PENDING
+    // 4. Create ticket seats and update showtime seats status to BOOKED
+    // 5. Return the ticket response
     @Override
     @Transactional
     public TicketResponse createTicket(User user, CreateTicketRequest request) 
@@ -45,18 +62,18 @@ public class TicketServiceImpl implements TicketService {
         ShowTimeSeat sts = null;
         boolean hasActiveBooking = false;
         for (Integer stsId : request.getShowtimeSeatIds()) {
-            sts = showTimeSeatRepository.findById(stsId)
+            sts = showTimeSeatRepository.findByIdWithLock(stsId)
                     .orElseThrow(() -> new ResourceNotFoundException("ShowTimeSeat not found with id: " + stsId));
 
             if (sts.getStatus() != SeatStatus.AVAILABLE) {
-                throw new ResourceAlreadyExistException("Seat " + sts.getSeat().getSeatName() + " is not available!");
+                throw new ResourceAlreadyExistException("Seat " + (sts.getSeat() != null ? sts.getSeat().getSeatName() : stsId) + " is not available!");
             }
 
             if (sts.getTicketSeats() != null) {
                 hasActiveBooking = sts.getTicketSeats().stream()
                         .anyMatch(ts -> ts.getCancelledAt() == null);
                 if (hasActiveBooking) {
-                    throw new ResourceAlreadyExistException("Seat " + sts.getSeat().getSeatName() + " has already been booked!");
+                    throw new ResourceAlreadyExistException("Seat " + (sts.getSeat() != null ? sts.getSeat().getSeatName() : stsId) + " has already been booked!");
                 }
             }
 
@@ -92,36 +109,61 @@ public class TicketServiceImpl implements TicketService {
         ticketSeatRepository.saveAll(ticketSeats);
         savedTicket.setTicketSeats(ticketSeats);
         showTimeSeatRepository.saveAll(selectedSeats);
+
         return mapToResponse(savedTicket);
     }
 
+    // Get ticket by id
     @Override
-    public TicketResponse getTicketById(int id) {
+    @Transactional(readOnly = true)
+    public TicketResponse getTicketById(int id, User currentUser) {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
+        validateTicketOwnership(ticket, currentUser);
         return mapToResponse(ticket);
     }
 
+    // Get ticket by uid
     @Override
-    public TicketResponse getTicketByUid(String uid) {
+    @Transactional(readOnly = true)
+    public TicketResponse getTicketByUid(String uid, User currentUser) {
         Ticket ticket = ticketRepository.findByUid(uid)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with uid: " + uid));
+        validateTicketOwnership(ticket, currentUser);
         return mapToResponse(ticket);
     }
 
+    private void validateTicketOwnership(Ticket ticket, User currentUser) {
+        if (currentUser == null) {
+            throw new IllegalArgumentException("User information required for ticket authorization check!");
+        }
+        boolean isAdmin = currentUser.getRole() == Role.ADMIN;
+        boolean isOwner = ticket.getUser() != null && ticket.getUser().getId() == currentUser.getId();
+        if (!isAdmin && !isOwner) {
+            throw new IllegalArgumentException("You are not authorized to view this ticket details!");
+        }
+    }
+
+    // Get all tickets for a user
     @Override
+    @Transactional(readOnly = true)
     public List<TicketResponse> getUserTickets(User user) {
         List<Ticket> tickets = ticketRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
         return tickets.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
+    // Confirm ticket payment and update ticket status to CONFIRMED
     @Override
     @Transactional
     public void confirmTicketPayment(int ticketId) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + ticketId));
-
-        ticket.setStatus(TicketStatus.CONFIRMED);
+        
+        if(ticket.getStatus().equals(TicketStatus.PENDING)) {
+            ticket.setStatus(TicketStatus.CONFIRMED);
+        }else {
+            throw new RuntimeException("Ticket status is not PENDING, cannot confirm payment!");
+        }
         ticket.setUpdatedAt(LocalDateTime.now());
         ticketRepository.save(ticket);
 
@@ -141,6 +183,7 @@ public class TicketServiceImpl implements TicketService {
         emailService.sendTicketConfirmationEmail(ticket);
     }
 
+    // Cancel ticket and update ticket status to CANCELLED
     @Override
     @Transactional
     public TicketResponse cancelTicket(int ticketId, User user) {
@@ -160,10 +203,11 @@ public class TicketServiceImpl implements TicketService {
             throw new ResourceNotFoundException("ShowTime information not found for ticket!");
         }
 
-        // Rule: Must cancel at least 2 hours before showtime start_time
-        LocalDateTime cancellationDeadline = LocalDateTime.now().plusHours(2);
+        // Must cancel at least 2 hours before showtime start_time
+        LocalDateTime cancellationDeadline = LocalDateTime.now().plusHours(CANCEL_TICKET_HOURS_LIMIT);
         if (cancellationDeadline.isAfter(st.getStartTime())) {
-            throw new IllegalStateException("Chỉ được hủy vé trước giờ chiếu ít nhất 2 tiếng!");
+            throw new IllegalStateException(
+                "Ticket must be cancelled at least " + CANCEL_TICKET_HOURS_LIMIT + " hours before the showtime!");
         }
 
         ticket.setStatus(TicketStatus.CANCELLED);
@@ -192,28 +236,53 @@ public class TicketServiceImpl implements TicketService {
         return mapToResponse(savedTicket);
     }
 
+    // Filter tickets by UID and pagination
+    @Override
+    @Transactional(readOnly = true)
+    public PagedResponse<TicketResponse> filter(int page, int size, String uid) {
+        int pageIndex = (page > 0) ? page - 1 : 0;
+        Pageable pageable = PageRequest.of(pageIndex, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Ticket> ticketPage;
+        if (uid == null || uid.isBlank()) {
+            ticketPage = ticketRepository.findAll(pageable);
+        } else {
+            ticketPage = ticketRepository.findByUidContaining(uid, pageable);
+        }
+        Page<TicketResponse> ticketResponsePage = ticketPage.map(this::mapToResponse);
+        return new PagedResponse<>(ticketResponsePage);
+    }
+
+    // map to response
     private TicketResponse mapToResponse(Ticket ticket) {
         ShowTime st = ticket.getShowTime();
+        log.debug("Mapping ticket ID={} to TicketResponse, showTime={}", ticket.getId(), st != null ? st.getId() : "null");
         List<String> seatNames = (ticket.getTicketSeats() != null) ?
                 ticket.getTicketSeats().stream()
                         .map(ts -> ts.getShowTimeSeat().getSeat().getSeatName())
                         .collect(Collectors.toList()) : new ArrayList<>();
-
-        return TicketResponse.builder()
-                .id(ticket.getId())
-                .uid(ticket.getUid())
-                .totalPrice(ticket.getTotalPrice())
-                .status(ticket.getStatus())
-                .createdAt(ticket.getCreatedAt())
-                .showtimeId(st != null ? st.getId() : 0)
-                .movieName(st != null && st.getMovie() != null ? st.getMovie().getName() : "")
-                .movieImageUrl(st != null && st.getMovie() != null ? st.getMovie().getImageUrl() : "")
-                .cinemaName(st != null && st.getCinema() != null ? st.getCinema().getName() : "")
-                .roomName(st != null && st.getRoom() != null ? st.getRoom().getName() : "")
-                .startTime(st != null ? st.getStartTime() : null)
-                .userName(ticket.getUser() != null ? ticket.getUser().getUsername() : "")
-                .userEmail(ticket.getUser() != null ? ticket.getUser().getEmail() : "")
-                .seatNames(seatNames)
-                .build();
+        TicketResponse resp = new TicketResponse();
+        resp.setId(ticket.getId());
+        resp.setUid(ticket.getUid());
+        resp.setTotalPrice(ticket.getTotalPrice());
+        resp.setStatus(ticket.getStatus());
+        resp.setCreatedAt(ticket.getCreatedAt());
+        resp.setShowtimeId(st != null ? st.getId() : 0);
+        resp.setMovieName(st != null && st.getMovie() != null ? st.getMovie().getName() : "");
+        resp.setMovieImageUrl(st != null && st.getMovie() != null ? st.getMovie().getImageUrl() : "");
+        resp.setCinemaName(st != null && st.getCinema() != null ? st.getCinema().getName() : "");
+        resp.setRoomName(st != null && st.getRoom() != null ? st.getRoom().getName() : "");
+        resp.setStartTime(st != null ? st.getStartTime() : null);
+        resp.setUserName(ticket.getUser() != null ? ticket.getUser().getUsername() : "");
+        resp.setUserEmail(ticket.getUser() != null ? ticket.getUser().getEmail() : "");
+        resp.setSeatNames(seatNames);
+        return resp;
     }
+
+    @Override
+    public Ticket findTicketById(int id) {
+        return ticketRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
+    }
+
+    
 }
