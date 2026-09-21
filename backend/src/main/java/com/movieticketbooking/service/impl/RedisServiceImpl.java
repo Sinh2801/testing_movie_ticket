@@ -21,6 +21,11 @@ public class RedisServiceImpl implements RedisService {
         redisTemplate.opsForValue().set(key, value);
     }
 
+    @Override
+    public void setWithExpiration(String key, Object value, long timeout, TimeUnit unit) {
+        redisTemplate.opsForValue().set(key, value, timeout, unit);
+    }
+
     // get value by key
     @Override
     public Object get(String key) {

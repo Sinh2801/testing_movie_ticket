@@ -29,6 +29,32 @@ const authService = {
       throw error.response?.data || { message: 'Đăng ký thất bại, lỗi kết nối mạng' };
     }
   },
+
+  /**
+   * Yêu cầu gửi mã OTP 6 chữ số quên mật khẩu
+   * @param {Object} data { email }
+   */
+  forgotPassword: async (data) => {
+    try {
+      const response = await axiosClient.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, data);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Gửi yêu cầu OTP thất bại' };
+    }
+  },
+
+  /**
+   * Xác thực mã OTP 6 chữ số và đặt lại mật khẩu
+   * @param {Object} data { email, otp, newPassword }
+   */
+  resetPassword: async (data) => {
+    try {
+      const response = await axiosClient.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, data);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Đặt lại mật khẩu thất bại' };
+    }
+  },
 };
 
 export default authService;

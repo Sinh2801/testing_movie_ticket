@@ -5,6 +5,8 @@ import Footer from './components/layout/Footer';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/Login/ForgotPassword';
+import ResetPassword from './pages/Login/ResetPassword';
 
 // Movies pages
 import SearchMovies from './pages/Movie/SearchMovies';
@@ -72,6 +74,8 @@ export default function App() {
                     <Route path="/home" element={<Home />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
 
                     {/* Movies */}
                     <Route path="/movies/search" element={<SearchMovies />} />

@@ -66,5 +66,11 @@ public interface TicketRepository extends JpaRepository<Ticket, Integer> {
     List<Ticket> findByUserIdOrderByCreatedAtDesc(int userId);
 
     Optional<Ticket> findByUid(String uid);
+
+    @EntityGraph(attributePaths = {
+        "ticketSeats",
+        "ticketSeats.showTimeSeat"
+    })
+    List<Ticket> findByStatusAndCreatedAtBefore(com.movieticketbooking.model.TicketStatus status, java.time.LocalDateTime dateTime);
 }
 

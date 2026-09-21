@@ -7,11 +7,15 @@ import com.movieticketbooking.model.Role;
 import com.movieticketbooking.model.User;
 import com.movieticketbooking.repository.RefreshTokenRepository;
 import com.movieticketbooking.repository.UserRepository;
+import com.movieticketbooking.request.auth.ForgotPasswordRequest;
 import com.movieticketbooking.request.auth.LoginRequest;
 import com.movieticketbooking.request.auth.RefreshTokenRequest;
 import com.movieticketbooking.request.auth.RegisterRequest;
+import com.movieticketbooking.request.auth.ResetPasswordRequest;
 import com.movieticketbooking.response.AuthResponse;
 import com.movieticketbooking.service.AuthService;
+import com.movieticketbooking.service.EmailService;
+import com.movieticketbooking.service.RedisService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,6 +26,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -33,6 +39,8 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
+    private final EmailService emailService;
+    private final RedisService redisService;
 
     // Register account
     @Override
@@ -134,6 +142,57 @@ public class AuthServiceImpl implements AuthService {
             refreshTokenRepository.save(rt);
             log.info("Refresh token revoked for user ID: {}", rt.getUser().getId());
         });
+    }
+
+    // Gửi mã OTP 6 chữ số quên mật khẩu qua Email và lưu Redis
+    @Override
+    public void forgotPassword(ForgotPasswordRequest request) {
+        String email = request.getEmail();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Tài khoản với Email [" + email + "] không tồn tại trong hệ thống!"));
+
+        // Sinh mã OTP 6 số ngẫu nhiên từ 100000 -> 999999
+        String otpCode = String.format("%06d", new Random().nextInt(900000) + 100000);
+
+        // Lưu mã OTP vào Redis với TTL = 300 giây (5 phút)
+        String redisKey = "otp_reset_" + email;
+        redisService.setWithExpiration(redisKey, otpCode, 300, TimeUnit.SECONDS);
+        log.info("🔑 Generated OTP 6-digits [{}] for email [{}] (Expires in 5 mins)", otpCode, email);
+
+        // Gửi email HTML chứa OTP
+        emailService.sendOtpForgotPasswordEmail(email, otpCode);
+    }
+
+    // Xác thực OTP và Đặt lại mật khẩu mới
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        String email = request.getEmail();
+        String inputOtp = request.getOtp();
+        String newPassword = request.getNewPassword();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Tài khoản với Email [" + email + "] không tồn tại!"));
+
+        String redisKey = "otp_reset_" + email;
+        Object storedOtpObj = redisService.get(redisKey);
+
+        if (storedOtpObj == null) {
+            throw new IllegalArgumentException("Mã OTP đã hết hạn hoặc không hợp lệ. Vui lòng yêu cầu gửi lại OTP!");
+        }
+
+        String storedOtp = storedOtpObj.toString();
+        if (!storedOtp.equals(inputOtp)) {
+            throw new IllegalArgumentException("Mã OTP 6 chữ số không chính xác. Vui lòng kiểm tra lại!");
+        }
+
+        // OTP hợp lệ -> Tiến hành đổi mật khẩu
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        // Xóa OTP trong Redis để không sử dụng lại lần 2
+        redisService.delete(redisKey);
+        log.info("✅ Password successfully reset for user [{}]", email);
     }
 
     // Create and save a new refresh token for the user

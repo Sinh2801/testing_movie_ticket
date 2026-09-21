@@ -90,7 +90,7 @@ export default function Login() {
               <label className="block text-xs font-medium text-slate-300">
                 Mật khẩu <span className="text-red-500">*</span>
               </label>
-              <a href="#" className="text-xs text-red-400 hover:underline">Quên mật khẩu?</a>
+              <Link to="/forgot-password" className="text-xs text-red-400 hover:underline">Quên mật khẩu?</Link>
             </div>
             <div className="relative">
               <input

@@ -78,7 +78,13 @@ public class StripeServiceImpl implements StripeService {
         }
 
         try {
-            // 5. Tạo tham số yêu cầu (CreateParams) gửi tới Stripe Server
+            // 5. Tạo Idempotency Key duy nhất cho vé này để tránh tạo trùng PaymentIntent trên Stripe
+            String idempotencyKey = "stripe_intent_ticket_" + ticket.getId();
+            com.stripe.net.RequestOptions requestOptions = com.stripe.net.RequestOptions.builder()
+                    .setIdempotencyKey(idempotencyKey)
+                    .build();
+
+            // 6. Tạo tham số yêu cầu (CreateParams) gửi tới Stripe Server
             // Lưu ý: Stripe tính tiền bằng đơn vị nhỏ nhất (VND không dùng số thập phân)
             PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
                     .setAmount(amountInVnd) // Số tiền thanh toán (Ví dụ: 90000 = 90,000 VNĐ)
@@ -92,10 +98,10 @@ public class StripeServiceImpl implements StripeService {
                     )
                     .build();
 
-            // 6. Gọi SDK Stripe để khởi tạo phiên giao dịch PaymentIntent thực sự trên máy chủ Stripe
-            PaymentIntent paymentIntent = PaymentIntent.create(params);
+            // 7. Gọi SDK Stripe với RequestOptions (chứa IdempotencyKey) để khởi tạo phiên giao dịch an toàn
+            PaymentIntent paymentIntent = PaymentIntent.create(params, requestOptions);
 
-            // 7. Lưu hoặc cập nhật bản ghi Payment trong CSDL local với trạng thái PENDING (Chờ thanh toán)
+            // 8. Lưu hoặc cập nhật bản ghi Payment trong CSDL local với trạng thái PENDING (Chờ thanh toán)
             Payment payment = paymentRepository.findByTicketId(ticket.getId())
                     .orElse(new Payment());
 
@@ -109,7 +115,7 @@ public class StripeServiceImpl implements StripeService {
             payment.setUpdatedAt(LocalDateTime.now());
             paymentRepository.save(payment);
 
-            // 8. Trả về clientSecret và publishableKey cho Frontend để hiển thị thẻ nhập Visa/Mastercard
+            // 9. Trả về clientSecret và publishableKey cho Frontend để hiển thị thẻ nhập Visa/Mastercard
             return StripePaymentResponse.builder()
                     .clientSecret(paymentIntent.getClientSecret())
                     .publishableKey(publishableKey)
@@ -147,7 +153,18 @@ public class StripeServiceImpl implements StripeService {
                     return newP;
                 });
 
-        // 2. Đổi trạng thái Payment sang SUCCESS và cập nhật thời gian thanh toán
+        // ⚡ 2. IDEMPOTENCY GUARD: Nếu thanh toán đã SUCCESS trước đó -> Bỏ qua không xử lý trùng lặp
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            log.warn("⚠️ [Idempotency Guard] Vé {} đã được xác nhận thanh toán trước đó. Trả về kết quả an toàn!", ticketId);
+            return PaymentResponse.builder()
+                    .paymentUrl("/profile.html?payment=success&ticketId=" + ticketId)
+                    .transactionId(payment.getTransactionId())
+                    .ticketId(ticketId)
+                    .message("Stripe Payment already confirmed (Idempotent response)")
+                    .build();
+        }
+
+        // 3. Đổi trạng thái Payment sang SUCCESS và cập nhật thời gian thanh toán
         payment.setStatus(PaymentStatus.SUCCESS);
         if (paymentIntentId != null && !paymentIntentId.isBlank()) {
             payment.setTransactionId(paymentIntentId);
@@ -156,10 +173,10 @@ public class StripeServiceImpl implements StripeService {
         payment.setUpdatedAt(LocalDateTime.now());
         paymentRepository.save(payment);
 
-        // 3. Gọi TicketService để chuyển vé sang CONFIRMED và chuyển trạng thái các ghế sang BOOKED
+        // 4. Gọi TicketService để chuyển vé sang CONFIRMED và chuyển trạng thái các ghế sang BOOKED
         ticketService.confirmTicketPayment(ticketId);
 
-        // 4. Trả về kết quả thành công cho Frontend
+        // 5. Trả về kết quả thành công cho Frontend
         return PaymentResponse.builder()
                 .paymentUrl("/profile.html?payment=success&ticketId=" + ticketId)
                 .transactionId(payment.getTransactionId())

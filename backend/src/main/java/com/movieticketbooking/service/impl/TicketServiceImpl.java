@@ -95,10 +95,10 @@ public class TicketServiceImpl implements TicketService {
         ticket.setUpdatedAt(LocalDateTime.now());
 
         Ticket savedTicket = ticketRepository.save(ticket);
-        // save ticket seats and show time seats status to BOOKED
+        // save ticket seats and set showtime seats status to RESERVED (tạm giữ trong 15 phút)
         List<TicketSeat> ticketSeats = new ArrayList<>();
         for (ShowTimeSeat s : selectedSeats) {
-            s.setStatus(SeatStatus.BOOKED);
+            s.setStatus(SeatStatus.RESERVED);
 
             TicketSeat ts = new TicketSeat();
             ts.setTicket(savedTicket);

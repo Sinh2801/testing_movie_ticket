@@ -45,5 +45,19 @@ public class AuthController {
         authService.logout(request.getRefreshToken());
         return ResponseEntity.ok(new ApiResponse("Logout successful", null));
     }
+
+    // Endpoint Yêu cầu mã OTP 6 chữ số quên mật khẩu qua Email
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse> forgotPassword(@RequestBody @Valid com.movieticketbooking.request.auth.ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(new ApiResponse("Mã OTP 6 chữ số đã được gửi đến email của bạn! Mã có hiệu lực trong 5 phút.", null));
+    }
+
+    // Endpoint Xác thực OTP 6 chữ số và Đặt lại Mật khẩu mới
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse> resetPassword(@RequestBody @Valid com.movieticketbooking.request.auth.ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(new ApiResponse("Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.", null));
+    }
 }
 

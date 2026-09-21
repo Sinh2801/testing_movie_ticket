@@ -208,10 +208,6 @@ export default function SelectSeat() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Vui lòng chọn các ghế còn trống bên dưới</p>
         </div>
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-emerald-400 shadow-inner">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-          <span>Tự động cập nhật ({SEAT_POLLING_INTERVAL / 1000}s)</span>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -269,7 +265,7 @@ export default function SelectSeat() {
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded bg-slate-800 border border-slate-800" />
-              <span>Đã đặt (Khóa)</span>
+              <span>Đã đặt / Đang giữ tạm</span>
             </div>
           </div>
 

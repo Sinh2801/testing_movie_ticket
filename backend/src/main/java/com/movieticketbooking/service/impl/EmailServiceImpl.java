@@ -134,4 +134,50 @@ public class EmailServiceImpl implements EmailService {
                     e.getMessage(), userEmail, htmlContent);
         }
     }
+
+    @Override
+    public void sendOtpForgotPasswordEmail(String toEmail, String otpCode) {
+        String htmlContent = String.format("""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0f172a; color: #ffffff; padding: 28px; border-radius: 16px; border: 1px solid #1e293b;">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <h2 style="color: #38bdf8; font-size: 26px; font-weight: 800; margin: 0;">MÃ XÁC THỰC QUÊN MẬT KHẨU</h2>
+                    <p style="color: #94a3b8; font-size: 14px; margin-t: 6px;">Hệ thống Đặt Vé Xem Phim MovieTicket</p>
+                </div>
+                
+                <p style="color: #cbd5e1; font-size: 15px;">Xin chào,</p>
+                <p style="color: #cbd5e1; font-size: 15px; line-height: 1.6;">
+                    Bạn vừa gửi yêu cầu đặt lại mật khẩu cho tài khoản <strong>%s</strong>. Dưới đây là mã OTP xác thực 6 chữ số của bạn:
+                </p>
+
+                <div style="background-color: #1e293b; text-align: center; padding: 20px; border-radius: 12px; margin: 24px 0; border: 1px dashed #38bdf8;">
+                    <span style="font-family: 'Courier New', monospace; font-size: 36px; font-weight: 900; letter-spacing: 12px; color: #f59e0b; display: inline-block;">%s</span>
+                </div>
+
+                <div style="background-color: #451a03; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px;">
+                    <p style="color: #fcd34d; font-size: 13px; margin: 0;">
+                        ⏰ Mã OTP có hiệu lực trong vòng <strong>5 phút</strong>. Tuyệt đối không chia sẻ mã này cho bất kỳ ai!
+                    </p>
+                </div>
+
+                <p style="font-size: 13px; color: #64748b; text-align: center; margin-top: 24px; border-t: 1px solid #1e293b; padding-top: 16px;">
+                    Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này hoặc liên hệ hỗ trợ.
+                </p>
+            </div>
+            """, toEmail, otpCode);
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("[MovieTicket] Mã OTP xác nhận quên mật khẩu: " + otpCode);
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+            log.info("Successfully sent OTP email to {}", toEmail);
+        } catch (Exception e) {
+            log.warn("Could not send OTP email via SMTP (Fallback Mode Active): {}. OTP for {} is [{}]", 
+                    e.getMessage(), toEmail, otpCode);
+        }
+    }
 }
