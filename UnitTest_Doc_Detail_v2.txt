@@ -1,0 +1,1287 @@
+TÀI LIỆU CHI TIẾT UNIT TEST CASES
+Dự án: Movie Ticket Booking System (Spring Boot 3.4.3, Java 21)
+Môn học: Kiểm thử phần mềm — Phần phụ trách: Unit Test
+Phạm vi: 90 test case thuộc 13 nhóm chức năng (module backend/src/main/java/com/movieticketbooking/)
+Nguồn thiết kế: UnitTest_Design.md (Equivalence Partitioning / Boundary Value Analysis / Decision Table)
+Loại tài liệu: Mô tả test case ở mức thiết kế chi tiết — không chứa mã Java/JUnit.
+1. Quy ước chung
+1.1. Cách đọc một test case
+Mỗi test case được trình bày bằng một bảng gồm các mục:
+Mục	Ý nghĩa
+Mã & Tên	ID duy nhất và tên ngắn gọn của test case
+Hàm kiểm thử	Class/phương thức đích (Target Method)
+Điều kiện tiên quyết / Mocks	Trạng thái dữ liệu và các dependency được mock trước khi chạy
+Dữ liệu đầu vào	Giá trị đầu vào cụ thể (giá trị mẫu, có thể thay bằng giá trị tương đương)
+Các bước thực hiện	Trình tự thao tác khi chạy test
+Kết quả mong đợi	Giá trị trả về / exception / tương tác (verify) cần đạt
+Kỹ thuật	EP (Equivalence Partitioning), BVA (Boundary Value Analysis), DT (Decision Table), Gap test
+
+1.2. Ký hiệu đặc biệt
+Ký hiệu	Ý nghĩa
+[Known Limitation]	Test case rơi vào GAP/DEFECT đã biết. *Kết quả mong đợi* được viết theo hành vi thực tế hiện tại của code, không phải hành vi lý tưởng. Nhóm quyết định giữ nguyên và ghi nhận trong Test Report.
+[Current Behavior]	Hành vi hiện tại của code đối với dữ liệu null (thiếu null-guard) nhưng không thuộc 4 Known Limitation chính thức. Test ghi nhận hành vi thực tế.
+verify never	Mock tương ứng không được gọi trong luồng của test.
+
+1.3. Nguyên tắc chung khi thực thi
+•Unit test chạy cô lập: mọi dependency (Repository, PasswordEncoder, AuthenticationManager, RedisTemplate, service phụ thuộc, dịch vụ gửi email…) đều được mock; không kết nối DB/Redis thật.
+•Các test phụ thuộc thời gian (TICKET-BOOK-05, TICKET-CANCEL-07, AUTH-REF-05, CLEAN-06) hiện không có `Clock` được inject trong code. Do đó, dữ liệu thời gian được dựng với khoảng đệm đủ lớn (ví dụ ±5 phút) so với now; không assert chính xác tại đúng thời điểm biên (mili-giây) để tránh test không ổn định (flaky).
+•Các giá trị trong cột *Dữ liệu đầu vào* là giá trị mẫu; message exception được so khớp theo đúng chuỗi trong code khi design đã nêu cụ thể, các trường hợp còn lại chỉ assert loại exception (và nội dung message nếu code có).
+2. Tổng quan 90 Test Case
+#	Nhóm chức năng	Class / Hàm đích	Tiền tố ID	Số TC
+1	Đăng ký	AuthServiceImpl.register	AUTH-REG	5
+2	Đăng nhập	AuthServiceImpl.login	AUTH-LOGIN	4
+3	Quên/đặt lại mật khẩu (OTP)	AuthServiceImpl.forgotPassword, resetPassword	AUTH-OTP	7
+4	JWT	JwtService	JWT	10
+5	Đặt vé	TicketServiceImpl.createTicket	TICKET-BOOK	10
+6	Redis	RedisServiceImpl	REDIS	8
+7	Thanh toán nội bộ	PaymentServiceImpl.confirmLocalPayment	PAY-LOCAL	5
+8	Hủy vé	TicketServiceImpl.cancelTicket	TICKET-CANCEL	8
+9	Phòng chiếu	Room.createSeats, RoomServiceImpl.createRoom	ROOM	8
+10	Suất chiếu	ShowTimeServiceImpl.createShowTime	SHOWTIME	6
+11	Làm mới token	AuthServiceImpl.refreshToken	AUTH-REF	5
+12	Dọn vé hết hạn	TicketCleanupServiceImpl.releaseExpiredTickets	CLEAN	6
+13	Xử lý exception toàn cục	GlobalExceptionHandler	EXC	8
+	Tổng cộng			90
+
+2.1. Danh sách 4 test case Known Limitation (GAP/DEFECT)
+#	Test case	Hạn chế trong code hiện tại	Vị trí	Hành vi thực tế được ghi nhận
+1	ROOM-06	Room.createSeats() không kiểm tra columns ≤ 0 (chỉ kiểm tra rows)	model/Room.java	Không ném exception; trả danh sách ghế rỗng
+2	SHOWTIME-06	Không kiểm tra xung đột thời gian suất chiếu	ShowTimeServiceImpl.java	Hai suất chiếu trùng/giao nhau đều được lưu thành công
+3	PAY-LOCAL-03	Không có idempotency guard khi xác nhận thanh toán	PaymentServiceImpl.java	Payment đã SUCCESS vẫn được set lại, save lại và gọi lại confirmTicketPayment
+4	TICKET-BOOK-10	Không chặn danh sách ghế rỗng/trùng ID	TicketServiceImpl.java	Danh sách rỗng tạo vé giá 0; ID trùng bị tính nhiều lần — không có exception từ guard
+
+3. Chi tiết Test Case
+3.1. AuthServiceImpl.register — nhóm AUTH-REG (5 TC)
+Mô tả logic: Tìm user theo email → nếu tồn tại ném ResourceAlreadyExistException; nếu password ≠ confirmPassword ném RuntimeException("Passwords do not match"); ngược lại encode password, gán role USER, lưu user, sinh access token + refresh token, lưu refresh token và trả AuthResponse.
+Mocks chung: UserRepository, PasswordEncoder, JwtService, RefreshTokenRepository.
+AUTH-REG-01 — Đăng ký hợp lệ
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.register(RegisterRequest)
+Điều kiện tiên quyết / Mocks	userRepository.findByEmail("new@mail.com") → Optional.empty()
+passwordEncoder.encode("Pass@123") → "ENC_HASH"
+jwtService.generateToken(...) → "ACCESS_TOKEN"
+jwtService.generateRefreshToken() → "REFRESH_TOKEN"
+userRepository.save(...) trả về chính user được lưu
+Dữ liệu đầu vào	email = new@mail.com; password = Pass@123; confirmPassword = Pass@123; name = Nguyen Van A; phoneNumber = 0901234567
+Các bước thực hiện	1. Dựng RegisterRequest với dữ liệu trên.
+2. Gọi register(request).
+3. Bắt User truyền vào userRepository.save (ArgumentCaptor).
+4. Kiểm tra AuthResponse trả về.
+Kết quả mong đợi	•User được lưu có password = "ENC_HASH" (không phải plain text), role = USER, email/name/phoneNumber đúng.
+•AuthResponse chứa token = "ACCESS_TOKEN", refreshToken = "REFRESH_TOKEN", email, name, role = USER.
+•userRepository.save và refreshTokenRepository.save mỗi hàm được gọi 1 lần.
+Kỹ thuật	EP, DT (D1)
+
+AUTH-REG-02 — Chặn email trùng
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.register(RegisterRequest)
+Điều kiện tiên quyết / Mocks	userRepository.findByEmail("exist@mail.com") → Optional.of(existingUser)
+Dữ liệu đầu vào	email = exist@mail.com; password = confirmPassword = Pass@123
+Các bước thực hiện	1. Dựng request với email đã tồn tại.
+2. Gọi register(request) và bắt exception.
+3. Verify các mock không bị gọi.
+Kết quả mong đợi	•Ném ResourceAlreadyExistException.
+•passwordEncoder.encode, userRepository.save, jwtService.generateToken, refreshTokenRepository.save verify never.
+•(Ánh xạ HTTP dự kiến qua handler: 409.)
+Kỹ thuật	EP, DT (D2)
+
+AUTH-REG-03 — Password không khớp
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.register(RegisterRequest)
+Điều kiện tiên quyết / Mocks	userRepository.findByEmail("new@mail.com") → Optional.empty()
+Dữ liệu đầu vào	email = new@mail.com; password = Pass@123; confirmPassword = Pass@456
+Các bước thực hiện	1. Dựng request có password khác confirmPassword.
+2. Gọi register(request) và bắt exception.
+3. Verify mock.
+Kết quả mong đợi	•Ném RuntimeException với message Passwords do not match.
+•passwordEncoder.encode và userRepository.save verify never.
+•(HTTP hiện tại qua handler: 400.)
+Kỹ thuật	EP, DT (D3)
+
+AUTH-REG-04 — Password null (kiểm tra hành vi hiện tại) [Current Behavior]
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.register(RegisterRequest)
+Điều kiện tiên quyết / Mocks	userRepository.findByEmail("new@mail.com") → Optional.empty()
+Dữ liệu đầu vào	email = new@mail.com; password = null; confirmPassword = Pass@123
+Các bước thực hiện	1. Dựng request với password = null.
+2. Gọi register(request) và bắt exception.
+3. Verify không có thao tác lưu.
+Kết quả mong đợi	•Phát sinh NullPointerException tại lời gọi password.equals(...) — service không có null-guard.
+•userRepository.save verify never.
+•Ghi chú: việc validate @NotBlank/null thuộc DTO/controller, được kiểm tra riêng, không gán thêm điều kiện cho service.
+Kỹ thuật	EP
+
+AUTH-REG-05 — Refresh token được lưu đúng thông tin
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.register(RegisterRequest)
+Điều kiện tiên quyết / Mocks	Email mới; jwtService.generateRefreshToken() → "RT-FIXED-001"; jwtService.getRefreshExpirationMs() → 604800000L (giá trị mặc định); các mock còn lại như AUTH-REG-01
+Dữ liệu đầu vào	Request hợp lệ (email = new@mail.com, password = confirmPassword)
+Các bước thực hiện	1. Ghi nhận thời điểm t0 trước khi gọi.
+2. Gọi register(request); ghi nhận t1 sau khi gọi.
+3. Bắt đối tượng RefreshToken truyền vào refreshTokenRepository.save.
+4. So sánh các trường.
+Kết quả mong đợi	•RefreshToken.token = "RT-FIXED-001", user = user vừa đăng ký, revoked = false.
+•createdAt nằm trong [t0, t1].
+•expiresAt = createdAt + (getRefreshExpirationMs() / 1000) giây (sai số cho phép vài giây).
+•AuthResponse.refreshToken giữ nguyên raw token "RT-FIXED-001".
+Kỹ thuật	BVA
+
+3.2. AuthServiceImpl.login — nhóm AUTH-LOGIN (4 TC)
+Mô tả logic: Gọi authenticationManager.authenticate trước khi truy vấn user → tìm user theo email → revoke toàn bộ refresh token cũ → sinh access/refresh token mới → lưu refresh token → trả AuthResponse.
+Mocks chung: AuthenticationManager, UserRepository, RefreshTokenRepository, JwtService.
+AUTH-LOGIN-01 — Login hợp lệ
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.login(LoginRequest)
+Điều kiện tiên quyết / Mocks	authenticationManager.authenticate(...) không ném exception
+userRepository.findByEmail("user@mail.com") → Optional.of(user) (role USER, name Nguyen Van A)
+Có refresh token cũ của user chưa bị revoke
+jwtService.generateToken → "ACCESS_NEW"; generateRefreshToken → "REFRESH_NEW"
+Dữ liệu đầu vào	email = user@mail.com; password = Pass@123
+Các bước thực hiện	1. Dựng LoginRequest.
+2. Gọi login(request).
+3. Verify thứ tự/tương tác: authenticate → findByEmail → revoke token cũ → save token mới.
+Kết quả mong đợi	•Toàn bộ refresh token cũ của user được revoke.
+•Refresh token mới được lưu (refreshTokenRepository.save).
+•AuthResponse chứa đúng email, name, role, token = "ACCESS_NEW", refreshToken = "REFRESH_NEW".
+Kỹ thuật	EP, DT (D1)
+
+AUTH-LOGIN-02 — Sai thông tin xác thực
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.login(LoginRequest)
+Điều kiện tiên quyết / Mocks	authenticationManager.authenticate(...) ném BadCredentialsException
+Dữ liệu đầu vào	email = user@mail.com; password = WrongPass
+Các bước thực hiện	1. Dựng request sai mật khẩu.
+2. Gọi login(request) và bắt exception.
+3. Verify các repository không bị gọi.
+Kết quả mong đợi	•BadCredentialsException được truyền nguyên ra ngoài.
+•userRepository.findByEmail, thao tác revoke token và refreshTokenRepository.save verify never.
+•(HTTP qua handler: 401.)
+Kỹ thuật	EP, DT (D2)
+
+AUTH-LOGIN-03 — Xác thực đúng nhưng user không tồn tại
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.login(LoginRequest)
+Điều kiện tiên quyết / Mocks	authenticate(...) không lỗi
+userRepository.findByEmail("ghost@mail.com") → Optional.empty()
+Dữ liệu đầu vào	email = ghost@mail.com; password = Pass@123
+Các bước thực hiện	1. Dựng request.
+2. Gọi login(request) và bắt exception.
+Kết quả mong đợi	•Ném ResourceNotFoundException với message User not found.
+•Không revoke, không save refresh token, không sinh token.
+•(HTTP: 404.)
+Kỹ thuật	DT (D3)
+
+AUTH-LOGIN-04 — User có role null [Current Behavior]
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.login(LoginRequest)
+Điều kiện tiên quyết / Mocks	authenticate(...) không lỗi
+findByEmail trả user có role = null
+jwtService trả token bình thường
+Dữ liệu đầu vào	email = user@mail.com; password = Pass@123
+Các bước thực hiện	1. Dựng user với role = null.
+2. Gọi login(request) và bắt exception.
+Kết quả mong đợi	•Phát sinh NullPointerException tại user.getRole().name().
+•Code không tự coi role null là USER.
+•Không assert thứ tự side effect (revoke/save) trước điểm lỗi; chỉ khẳng định không có AuthResponse trả về.
+Kỹ thuật	EP
+
+3.3. AuthServiceImpl.forgotPassword / resetPassword — nhóm AUTH-OTP (7 TC)
+Mô tả logic:
+•forgotPassword: tìm user → sinh OTP bằng new Random().nextInt(900000) + 100000 → lưu Redis với key otp_reset_<email>, TTL 300 giây → gửi email.
+•resetPassword: tìm user → đọc OTP từ Redis → thiếu/sai thì ném IllegalArgumentException → đúng thì encode password mới, save user, xóa key Redis.
+Mocks chung: UserRepository, RedisService, PasswordEncoder, dịch vụ gửi email.
+AUTH-OTP-01 — Gửi OTP thành công
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.forgotPassword(String email)
+Điều kiện tiên quyết / Mocks	userRepository.findByEmail("user@mail.com") → Optional.of(user)
+Mock RedisService và dịch vụ email
+Dữ liệu đầu vào	email = user@mail.com
+Các bước thực hiện	1. Gọi forgotPassword("user@mail.com").
+2. Dùng ArgumentCaptor bắt tham số của redisService.setWithExpiration.
+3. Bắt nội dung OTP được truyền sang dịch vụ email.
+Kết quả mong đợi	•Redis được gọi với key đúng otp_reset_user@mail.com, TTL = 300, đơn vị SECONDS.
+•OTP là chuỗi 6 chữ số (khớp regex ^\d{6}$, giá trị trong [100000, 999999]). Không assert một OTP cố định.
+•Email được gửi 1 lần tới user@mail.com, OTP trong email trùng OTP lưu Redis.
+Kỹ thuật	EP, BVA
+
+AUTH-OTP-02 — Email không tồn tại khi gửi OTP
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.forgotPassword(String email)
+Điều kiện tiên quyết / Mocks	userRepository.findByEmail("ghost@mail.com") → Optional.empty()
+Dữ liệu đầu vào	email = ghost@mail.com
+Các bước thực hiện	1. Gọi forgotPassword("ghost@mail.com") và bắt exception.
+2. Verify Redis/email không được gọi.
+Kết quả mong đợi	•Ném ResourceNotFoundException.
+•redisService.* và dịch vụ email verify never.
+•(HTTP: 404.)
+Kỹ thuật	EP, DT
+
+AUTH-OTP-03 — OTP tại hai biên của công thức sinh (100000 / 999999)
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.forgotPassword(String email)
+Điều kiện tiên quyết / Mocks	User tồn tại. Implementation hiện tại dùng new Random() trực tiếp, không có điểm inject để ép giá trị biên → test thực hiện theo hướng kiểm tra tính chất (property-based): chạy lặp nhiều lần (ví dụ 1000 lần), mock Redis/email để không phụ thuộc hạ tầng.
+Dữ liệu đầu vào	email = user@mail.com; số lần lặp = 1000
+Các bước thực hiện	1. Gọi forgotPassword lặp 1000 lần.
+2. Thu thập mọi OTP được truyền vào Redis.
+3. Kiểm tra từng OTP theo biên.
+Kết quả mong đợi	•Mọi OTP có đúng 6 chữ số, nằm trong [100000, 999999]; không có OTP 99999 (5 chữ số) hay 1000000 (7 chữ số).
+•Mọi lần lưu đều dùng TTL 300 SECONDS.
+•Nếu về sau có thể inject Random, bổ sung 2 case cố định OTP 100000 và 999999 (vẫn format 6 chữ số).
+Kỹ thuật	BVA
+
+AUTH-OTP-04 — Reset password với OTP hợp lệ
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.resetPassword(email, otp, newPassword)
+Điều kiện tiên quyết / Mocks	findByEmail("user@mail.com") → Optional.of(user)
+redisService.get("otp_reset_user@mail.com") → "123456"
+passwordEncoder.encode("NewPass@1") → "ENC_NEW"
+Dữ liệu đầu vào	email = user@mail.com; otp = 123456; newPassword = NewPass@1
+Các bước thực hiện	1. Gọi resetPassword(...).
+2. Bắt User truyền vào userRepository.save.
+3. Verify redisService.delete.
+Kết quả mong đợi	•user.password = "ENC_NEW", userRepository.save(user) gọi 1 lần.
+•redisService.delete("otp_reset_user@mail.com") gọi 1 lần (OTP dùng một lần).
+•Không ném exception.
+Kỹ thuật	EP, DT (D1)
+
+AUTH-OTP-05 — OTP hết hạn / không có trong Redis
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.resetPassword(email, otp, newPassword)
+Điều kiện tiên quyết / Mocks	User tồn tại; redisService.get("otp_reset_user@mail.com") → null
+Dữ liệu đầu vào	email = user@mail.com; otp = 123456; newPassword = NewPass@1
+Các bước thực hiện	1. Gọi resetPassword(...) và bắt exception.
+2. Verify không đổi mật khẩu/xóa key.
+Kết quả mong đợi	•Ném IllegalArgumentException với message báo OTP hết hạn/không hợp lệ.
+•passwordEncoder.encode, userRepository.save, redisService.delete verify never.
+•(HTTP: 400.)
+Kỹ thuật	EP, DT (D2)
+
+AUTH-OTP-06 — OTP sai
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.resetPassword(email, otp, newPassword)
+Điều kiện tiên quyết / Mocks	User tồn tại; redisService.get(...) → "123456"
+Dữ liệu đầu vào	email = user@mail.com; otp = 654321; newPassword = NewPass@1
+Các bước thực hiện	1. Gọi resetPassword(...) và bắt exception.
+2. Verify side effect.
+Kết quả mong đợi	•Ném IllegalArgumentException với message báo OTP không chính xác.
+•passwordEncoder.encode, userRepository.save, redisService.delete verify never (OTP đúng vẫn còn hiệu lực).
+•(HTTP: 400.)
+Kỹ thuật	EP, DT (D3)
+
+AUTH-OTP-07 — Email reset không tồn tại
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.resetPassword(email, otp, newPassword)
+Điều kiện tiên quyết / Mocks	userRepository.findByEmail("ghost@mail.com") → Optional.empty()
+Dữ liệu đầu vào	email = ghost@mail.com; otp = 123456; newPassword = NewPass@1
+Các bước thực hiện	1. Gọi resetPassword(...) và bắt exception.
+2. Verify Redis không được đọc.
+Kết quả mong đợi	•Ném ResourceNotFoundException.
+•redisService.get verify never; không encode/save/delete.
+•(HTTP: 404.)
+Kỹ thuật	EP, DT (D4)
+
+3.4. JwtService — nhóm JWT (10 TC)
+Mô tả logic: Access token ký bằng secret Base64; subject = userDetails.getUsername(); có issued-at và expiration = now + jwtExpiration. isTokenValid = subject trùng username và token chưa hết hạn; các lỗi parse/signature/Base64/hết hạn không bị service bắt (exception của JJWT được truyền ra). Refresh token = 2 UUID nối bằng -, không chứa claims.
+Thiết lập chung: Khởi tạo JwtService thật (không mock); inject secret Base64 hợp lệ (đủ độ dài khóa HMAC ≥ 256 bit), jwtExpiration = 3600000 ms (1 giờ) và refreshExpiration bằng cấu hình/giá trị mặc định. UserDetails mẫu: username = user@mail.com.
+JWT-01 — Tạo và parse access token
+Mục	Nội dung
+Hàm kiểm thử	JwtService.generateToken(UserDetails), extractUsername(token), extractClaim(token, fn)
+Điều kiện tiên quyết / Mocks	Secret Base64 hợp lệ; expiration dương
+Dữ liệu đầu vào	UserDetails username = user@mail.com
+Các bước thực hiện	1. Gọi generateToken(userDetails).
+2. Gọi extractUsername(token).
+3. Trích claim issuedAt và expiration.
+Kết quả mong đợi	•Token khác null/rỗng, có 3 phần ngăn cách bởi dấu ..
+•extractUsername = user@mail.com.
+•Có issuedAt và expiration; expiration - issuedAt ≈ jwtExpiration (cho phép sai số nhỏ do làm tròn giây).
+Kỹ thuật	EP
+
+JWT-02 — Tạo token có extra claims
+Mục	Nội dung
+Hàm kiểm thử	JwtService.generateToken(Map<String,Object> extraClaims, UserDetails)
+Điều kiện tiên quyết / Mocks	Secret hợp lệ
+Dữ liệu đầu vào	extraClaims = { "role": "USER", "uid": 42 }; username = user@mail.com
+Các bước thực hiện	1. Gọi generateToken(extraClaims, userDetails).
+2. Parse token, đọc claim role, uid và subject.
+Kết quả mong đợi	•Claim role = "USER", uid = 42 xuất hiện khi parse.
+•Subject vẫn là user@mail.com.
+Kỹ thuật	EP
+
+JWT-03 — Username trùng, token chưa hết hạn
+Mục	Nội dung
+Hàm kiểm thử	JwtService.isTokenValid(token, userDetails)
+Điều kiện tiên quyết / Mocks	Token vừa tạo cho user@mail.com
+Dữ liệu đầu vào	token (user A) + UserDetails (user A)
+Các bước thực hiện	1. Tạo token.
+2. Gọi isTokenValid(token, userDetails).
+Kết quả mong đợi	Trả true.
+Kỹ thuật	DT (D1)
+
+JWT-04 — Username khác
+Mục	Nội dung
+Hàm kiểm thử	JwtService.isTokenValid(token, userDetails)
+Điều kiện tiên quyết / Mocks	Token hợp lệ của user A
+Dữ liệu đầu vào	token của a@mail.com; UserDetails username = b@mail.com
+Các bước thực hiện	1. Tạo token cho A.
+2. Gọi isTokenValid(token, userB).
+Kết quả mong đợi	Trả false (không ném exception).
+Kỹ thuật	DT (D2)
+
+JWT-05 — Token hết hạn
+Mục	Nội dung
+Hàm kiểm thử	JwtService.isTokenValid / extractUsername
+Điều kiện tiên quyết / Mocks	Tạo token với expiration ở quá khứ (ví dụ jwtExpiration = -1000 ms hoặc expiration cấu hình = 1 ms rồi chờ ngắn trước khi parse)
+Dữ liệu đầu vào	Token đã quá hạn + UserDetails đúng username
+Các bước thực hiện	1. Sinh token hết hạn.
+2. Gọi extractUsername(token) / isTokenValid(token, user) và bắt exception.
+Kết quả mong đợi	•Ném ExpiredJwtException (của JJWT) — không bị nuốt và không tự đổi thành false.
+•Cho test về biên thời gian: dùng khoảng đệm (clock tolerance) để tránh flaky.
+Kỹ thuật	BVA
+
+JWT-06 — Sai chữ ký
+Mục	Nội dung
+Hàm kiểm thử	JwtService.extractUsername(token) / isTokenValid
+Điều kiện tiên quyết / Mocks	Token được ký bằng secret khác secret hiện hành
+Dữ liệu đầu vào	Token ký bằng secretOther + JwtService đang dùng secretCurrent
+Các bước thực hiện	1. Dựng token bằng secret khác.
+2. Gọi extractUsername(token) và bắt exception.
+Kết quả mong đợi	Ném exception chữ ký/parse của JJWT (SignatureException hoặc tương đương theo phiên bản).
+Kỹ thuật	EP
+
+JWT-07 — Token malformed
+Mục	Nội dung
+Hàm kiểm thử	JwtService.extractUsername(token)
+Điều kiện tiên quyết / Mocks	Không phụ thuộc secret đúng
+Dữ liệu đầu vào	token = "this-is-not-a-jwt"
+Các bước thực hiện	1. Gọi extractUsername("this-is-not-a-jwt") và bắt exception.
+Kết quả mong đợi	Ném MalformedJwtException (hoặc exception parse tương đương).
+Kỹ thuật	EP
+
+JWT-08 — Secret không phải Base64
+Mục	Nội dung
+Hàm kiểm thử	JwtService.generateToken / extractUsername
+Điều kiện tiên quyết / Mocks	Inject secret không hợp lệ, ví dụ "!!!not_base64@@@"
+Dữ liệu đầu vào	UserDetails bất kỳ; hoặc token bất kỳ
+Các bước thực hiện	1. Inject secret lỗi.
+2. Gọi generateToken(...) rồi (độc lập) extractUsername(...), bắt exception.
+Kết quả mong đợi	Ném exception khi giải mã Base64/tạo khóa (ví dụ DecodingException/IllegalArgumentException tùy phiên bản JJWT); không trả token.
+Kỹ thuật	EP
+
+JWT-09 — Định dạng refresh token
+Mục	Nội dung
+Hàm kiểm thử	JwtService.generateRefreshToken()
+Điều kiện tiên quyết / Mocks	Không cần UserDetails
+Dữ liệu đầu vào	Gọi 2 lần liên tiếp
+Các bước thực hiện	1. Gọi generateRefreshToken() → rt1.
+2. Gọi lần nữa → rt2.
+3. Tách chuỗi theo - và kiểm tra.
+Kết quả mong đợi	•Mỗi token gồm hai UUID nối bằng - (khớp mẫu UUID + - + UUID).
+•rt1 ≠ rt2.
+•Token không chứa claims (không phải JWT 3 phần).
+Kỹ thuật	EP
+
+JWT-10 — Getter thời gian hết hạn refresh token
+Mục	Nội dung
+Hàm kiểm thử	JwtService.getRefreshExpirationMs()
+Điều kiện tiên quyết / Mocks	Dùng giá trị mặc định của annotation (không override) hoặc giá trị inject xác định
+Dữ liệu đầu vào	Không
+Các bước thực hiện	1. Gọi getRefreshExpirationMs().
+Kết quả mong đợi	Trả đúng 604800000 (7 ngày) khi không override; nếu inject giá trị khác thì trả đúng giá trị đã inject.
+Kỹ thuật	BVA
+
+3.5. TicketServiceImpl.createTicket — nhóm TICKET-BOOK (10 TC)
+Mô tả logic: Tìm showtime → từ chối nếu startTime null hoặc trước now → với từng showtime-seat ID: lấy lock (findByIdWithLock), yêu cầu status AVAILABLE, kiểm tra không có TicketSeat active (cancelledAt = null) → tạo Ticket PENDING, tổng tiền = price × số ghế, tạo TicketSeat, chuyển ghế sang RESERVED.
+Mocks chung: ShowTimeRepository, ShowTimeSeatRepository (findByIdWithLock), TicketRepository, TicketSeatRepository, user hiện tại. Showtime mẫu: price = 100000, startTime = now + 1 ngày (trừ khi nêu khác).
+TICKET-BOOK-01 — Đặt 1 ghế còn trống
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.createTicket(request, user)
+Điều kiện tiên quyết / Mocks	Showtime tồn tại, startTime ở tương lai, price = 100000
+findByIdWithLock(10) → seat status AVAILABLE
+Không có TicketSeat active cho seat 10
+Dữ liệu đầu vào	showtimeId = 1; showtimeSeatIds = [10]
+Các bước thực hiện	1. Gọi createTicket(...).
+2. Bắt Ticket, TicketSeat và seat được lưu.
+3. Kiểm tra giá trị.
+Kết quả mong đợi	•Ticket status PENDING, totalPrice = 100000.
+•Seat 10 chuyển sang RESERVED và được lưu.
+•1 TicketSeat được lưu, gắn đúng ticket và seat.
+Kỹ thuật	EP
+
+TICKET-BOOK-02 — Đặt nhiều ghế
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.createTicket(request, user)
+Điều kiện tiên quyết / Mocks	Showtime hợp lệ (price = 100000); 3 seat (10, 11, 12) đều AVAILABLE, không active booking
+Dữ liệu đầu vào	showtimeId = 1; showtimeSeatIds = [10, 11, 12]
+Các bước thực hiện	1. Gọi createTicket(...).
+2. Kiểm tra tổng tiền, số TicketSeat, số lần saveAll.
+Kết quả mong đợi	•totalPrice = 100000 × 3 = 300000.
+•Tạo đủ 3 TicketSeat; saveAll được gọi với đủ 3 phần tử.
+•Cả 3 seat chuyển RESERVED.
+Kỹ thuật	EP
+
+TICKET-BOOK-03 — Showtime không tồn tại
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.createTicket(request, user)
+Điều kiện tiên quyết / Mocks	showTimeRepository.findById(999) → Optional.empty()
+Dữ liệu đầu vào	showtimeId = 999; showtimeSeatIds = [10]
+Các bước thực hiện	1. Gọi createTicket(...) và bắt exception.
+Kết quả mong đợi	•Ném ResourceNotFoundException.
+•Không lấy lock seat, không lưu ticket.
+•(HTTP: 404.)
+Kỹ thuật	EP
+
+TICKET-BOOK-04 — Showtime có startTime null
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.createTicket(request, user)
+Điều kiện tiên quyết / Mocks	Showtime tồn tại nhưng startTime = null
+Dữ liệu đầu vào	showtimeId = 1; showtimeSeatIds = [10]
+Các bước thực hiện	1. Gọi createTicket(...) và bắt exception.
+Kết quả mong đợi	•Ném IllegalArgumentException.
+•Không lưu ticket; không đổi trạng thái ghế.
+•(HTTP: 400.)
+Kỹ thuật	EP
+
+TICKET-BOOK-05 — Showtime đã diễn ra
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.createTicket(request, user)
+Điều kiện tiên quyết / Mocks	Showtime tồn tại, startTime = now − 10 phút (khoảng đệm đủ lớn vì không có Clock)
+Dữ liệu đầu vào	showtimeId = 1; showtimeSeatIds = [10]
+(Mở rộng biên: startTime = now + 10 phút → phải đặt được)
+Các bước thực hiện	1. Gọi createTicket(...) và bắt exception.
+2. (Mở rộng) lặp lại với startTime tương lai gần.
+Kết quả mong đợi	•Ném IllegalArgumentException khi startTime ở quá khứ; không lưu gì.
+•Với startTime tương lai gần: không ném exception thời gian.
+•(HTTP: 400.)
+Kỹ thuật	BVA
+
+TICKET-BOOK-06 — Seat không tồn tại
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.createTicket(request, user)
+Điều kiện tiên quyết / Mocks	Showtime hợp lệ; findByIdWithLock(777) → Optional.empty()
+Dữ liệu đầu vào	showtimeId = 1; showtimeSeatIds = [777]
+Các bước thực hiện	1. Gọi createTicket(...) và bắt exception.
+2. Verify không lưu ticket.
+Kết quả mong đợi	•Ném ResourceNotFoundException.
+•Không tạo ticket (ticketRepository.save verify never).
+•(HTTP: 404.)
+Kỹ thuật	EP
+
+TICKET-BOOK-07 — Seat không ở trạng thái AVAILABLE
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.createTicket(request, user)
+Điều kiện tiên quyết / Mocks	Showtime hợp lệ; seat 10 có status BOOKED (lặp thêm với RESERVED)
+Dữ liệu đầu vào	showtimeId = 1; showtimeSeatIds = [10]
+Các bước thực hiện	1. Gọi createTicket(...) và bắt exception.
+2. Lặp với status RESERVED.
+Kết quả mong đợi	•Ném ResourceAlreadyExistException.
+•ticketRepository.save verify never; seat không bị đổi trạng thái.
+•(HTTP: 409.)
+Kỹ thuật	EP
+
+TICKET-BOOK-08 — Seat có booking đang active
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.createTicket(request, user)
+Điều kiện tiên quyết / Mocks	Seat 10 AVAILABLE nhưng tồn tại TicketSeat với cancelledAt = null
+Dữ liệu đầu vào	showtimeId = 1; showtimeSeatIds = [10]
+Các bước thực hiện	1. Gọi createTicket(...) và bắt exception.
+Kết quả mong đợi	•Ném ResourceAlreadyExistException với message thể hiện ghế đã được đặt (already booked).
+•Không tạo ticket mới.
+•(HTTP: 409.)
+Kỹ thuật	EP
+
+TICKET-BOOK-09 — Ghế có TicketSeat đã hủy → được đặt lại
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.createTicket(request, user)
+Điều kiện tiên quyết / Mocks	Seat 10 AVAILABLE; mọi TicketSeat cũ của seat có cancelledAt != null
+Dữ liệu đầu vào	showtimeId = 1; showtimeSeatIds = [10]
+Các bước thực hiện	1. Gọi createTicket(...).
+2. Kiểm tra ticket và trạng thái ghế.
+Kết quả mong đợi	•Không ném exception; ticket PENDING được tạo.
+•Seat chuyển RESERVED.
+Kỹ thuật	EP
+
+TICKET-BOOK-10 — Danh sách ghế rỗng / trùng ID [Known Limitation]
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.createTicket(request, user)
+Điều kiện tiên quyết / Mocks	Showtime hợp lệ (price = 100000, tương lai).
+Case (b): findByIdWithLock(10) được stub trả đối tượng seat `AVAILABLE` mới ở mỗi lần gọi (để hành vi không phụ thuộc việc seat bị đổi trạng thái trong bộ nhớ); không có active booking.
+Dữ liệu đầu vào	(a) showtimeSeatIds = []
+(b) showtimeSeatIds = [10, 10]
+Các bước thực hiện	1. Chạy case (a): gọi createTicket(...), ghi nhận kết quả.
+2. Chạy case (b): gọi createTicket(...), ghi nhận kết quả.
+Kết quả mong đợi (theo hành vi thực tế hiện tại)	[Known Limitation] Service không có guard cho danh sách rỗng/trùng:
+•(a) Không ném exception; tạo ticket PENDING với totalPrice = 0, không có TicketSeat.
+•(b) Không ném exception từ guard trùng ID; ID 10 được xử lý hai lần, totalPrice = 100000 × 2 = 200000, tạo 2 TicketSeat cho cùng một ghế.
+•Đây là test ghi nhận thiếu validation, không coi là hành vi đúng; ghi vào Test Report.
+Kỹ thuật	BVA, Gap test
+
+3.6. RedisServiceImpl — nhóm REDIS (8 TC)
+Mô tả logic: Ủy quyền cho RedisTemplate: set, setWithExpiration, get, delete, exists, expire. increment(key, delta): delta < 0 → IllegalArgumentException; Redis trả null → trả 0; còn lại trả giá trị Redis.
+Mocks chung: RedisTemplate<String,Object> và ValueOperations.
+REDIS-01 — Set value
+Mục	Nội dung
+Hàm kiểm thử	RedisServiceImpl.set(key, value)
+Điều kiện tiên quyết / Mocks	redisTemplate.opsForValue() → mock ValueOperations
+Dữ liệu đầu vào	key = k1; value = "v1"
+Các bước thực hiện	1. Gọi set("k1", "v1").
+2. Verify valueOps.set.
+Kết quả mong đợi	valueOps.set("k1", "v1") được gọi đúng 1 lần, không có TTL.
+Kỹ thuật	EP
+
+REDIS-02 — Set value có TTL
+Mục	Nội dung
+Hàm kiểm thử	RedisServiceImpl.setWithExpiration(key, value, timeout, unit)
+Điều kiện tiên quyết / Mocks	Mock ValueOperations
+Dữ liệu đầu vào	key = otp_reset_a@mail.com; value = "123456"; timeout = 300; unit = SECONDS
+(Biên bổ sung: timeout = 0, 1)
+Các bước thực hiện	1. Gọi setWithExpiration(...).
+2. Verify overload có timeout/unit.
+Kết quả mong đợi	valueOps.set(key, value, 300, SECONDS) được gọi đúng tham số; với timeout 0/1 giá trị được truyền nguyên trạng (wrapper không tự kiểm tra ngưỡng).
+Kỹ thuật	EP, BVA
+
+REDIS-03 — Get value
+Mục	Nội dung
+Hàm kiểm thử	RedisServiceImpl.get(key)
+Điều kiện tiên quyết / Mocks	valueOps.get("k1") → "v1"
+Dữ liệu đầu vào	key = k1
+Các bước thực hiện	1. Gọi get("k1").
+Kết quả mong đợi	Trả đúng object "v1".
+Kỹ thuật	EP
+
+REDIS-04 — Delete value
+Mục	Nội dung
+Hàm kiểm thử	RedisServiceImpl.delete(key)
+Điều kiện tiên quyết / Mocks	Mock redisTemplate
+Dữ liệu đầu vào	key = k1
+Các bước thực hiện	1. Gọi delete("k1").
+2. Verify redisTemplate.delete.
+Kết quả mong đợi	redisTemplate.delete("k1") được gọi đúng 1 lần.
+Kỹ thuật	EP
+
+REDIS-05 — Exists và expire
+Mục	Nội dung
+Hàm kiểm thử	RedisServiceImpl.exists(key), RedisServiceImpl.expire(key, timeout, unit)
+Điều kiện tiên quyết / Mocks	redisTemplate.hasKey("k1") → true; redisTemplate.expire("k1", 60, SECONDS) → true
+Dữ liệu đầu vào	key = k1; timeout = 60; unit = SECONDS
+Các bước thực hiện	1. Gọi exists("k1").
+2. Gọi expire("k1", 60, SECONDS).
+3. Verify tham số.
+Kết quả mong đợi	Cả hai trả true; hasKey và expire được gọi với đúng đối số.
+Kỹ thuật	EP
+
+REDIS-06 — Increment với delta âm
+Mục	Nội dung
+Hàm kiểm thử	RedisServiceImpl.increment(key, delta)
+Điều kiện tiên quyết / Mocks	Không cần cấu hình Redis call
+Dữ liệu đầu vào	key = counter; delta = -1
+Các bước thực hiện	1. Gọi increment("counter", -1) và bắt exception.
+2. Verify Redis không được gọi.
+Kết quả mong đợi	•Ném IllegalArgumentException với message hiện tại Delta must be greater than 0.
+•valueOps.increment verify never.
+Kỹ thuật	BVA
+
+REDIS-07 — Increment với delta 0 và dương
+Mục	Nội dung
+Hàm kiểm thử	RedisServiceImpl.increment(key, delta)
+Điều kiện tiên quyết / Mocks	valueOps.increment("counter", 0) → 0L; valueOps.increment("counter", 1) → 5L
+Dữ liệu đầu vào	(a) delta = 0; (b) delta = 1
+Các bước thực hiện	1. Gọi increment("counter", 0).
+2. Gọi increment("counter", 1).
+Kết quả mong đợi	•(a) Không ném exception, trả 0 — code cho phép delta = 0 dù message ghi "greater than 0".
+•(b) Trả 5 (đúng giá trị Redis trả về).
+Kỹ thuật	BVA
+
+REDIS-08 — Increment khi Redis trả null hoặc ném exception
+Mục	Nội dung
+Hàm kiểm thử	RedisServiceImpl.increment(key, delta)
+Điều kiện tiên quyết / Mocks	(a) valueOps.increment(...) → null
+(b) valueOps.increment(...) ném RuntimeException("Redis down")
+Dữ liệu đầu vào	key = counter; delta = 1
+Các bước thực hiện	1. Chạy case (a) và ghi nhận kết quả.
+2. Chạy case (b) và bắt exception.
+Kết quả mong đợi	•(a) Trả 0 (null được chuyển thành 0).
+•(b) Exception được truyền nguyên ra ngoài, service không bắt.
+Kỹ thuật	EP
+
+3.7. PaymentServiceImpl.confirmLocalPayment — nhóm PAY-LOCAL (5 TC)
+Mô tả logic: Tìm payment theo ticket ID (không có → ResourceNotFoundException) → set status = SUCCESS, paidAt, updatedAt → paymentRepository.save → ticketService.confirmTicketPayment → trả payment response.
+Mocks chung: PaymentRepository, TicketService.
+PAY-LOCAL-01 — Xác nhận payment hợp lệ
+Mục	Nội dung
+Hàm kiểm thử	PaymentServiceImpl.confirmLocalPayment(Long ticketId)
+Điều kiện tiên quyết / Mocks	paymentRepository.findByTicketId(5) → payment (status = PENDING, transactionId = "TXN-001")
+ticketService.confirmTicketPayment(5) chạy thành công
+Dữ liệu đầu vào	ticketId = 5
+Các bước thực hiện	1. Gọi confirmLocalPayment(5).
+2. Bắt payment được lưu.
+3. Verify gọi ticketService.
+Kết quả mong đợi	•Payment status = SUCCESS; paidAt và updatedAt có giá trị (≠ null).
+•paymentRepository.save gọi 1 lần; ticketService.confirmTicketPayment(5) gọi 1 lần.
+•Response phản ánh đúng payment (status SUCCESS, transactionId TXN-001).
+Kỹ thuật	EP
+
+PAY-LOCAL-02 — Payment không tồn tại
+Mục	Nội dung
+Hàm kiểm thử	PaymentServiceImpl.confirmLocalPayment(Long ticketId)
+Điều kiện tiên quyết / Mocks	paymentRepository.findByTicketId(999) → Optional.empty()
+Dữ liệu đầu vào	ticketId = 999
+Các bước thực hiện	1. Gọi confirmLocalPayment(999) và bắt exception.
+2. Verify không gọi ticket service.
+Kết quả mong đợi	•Ném ResourceNotFoundException.
+•paymentRepository.save và ticketService.confirmTicketPayment verify never.
+•(HTTP: 404.)
+Kỹ thuật	EP, DT (D2)
+
+PAY-LOCAL-03 — Xác nhận lặp payment đã SUCCESS [Known Limitation]
+Mục	Nội dung
+Hàm kiểm thử	PaymentServiceImpl.confirmLocalPayment(Long ticketId)
+Điều kiện tiên quyết / Mocks	findByTicketId(5) → payment đã status = SUCCESS, paidAt = T0 (thời điểm cũ)
+ticketService.confirmTicketPayment(5) chạy thành công
+Dữ liệu đầu vào	ticketId = 5 (gọi xác nhận lần thứ hai)
+Các bước thực hiện	1. Gọi confirmLocalPayment(5).
+2. Verify save, confirmTicketPayment và giá trị paidAt.
+Kết quả mong đợi (theo hành vi thực tế hiện tại)	[Known Limitation] Không có idempotency guard:
+•Không ném exception, không bỏ qua; trả response SUCCESS.
+•paymentRepository.save vẫn được gọi lại; paidAt/updatedAt bị ghi đè bằng thời điểm mới (≠ T0).
+•ticketService.confirmTicketPayment(5) vẫn được gọi lại.
+•Không được kỳ vọng "thành công idempotent"; ghi nhận trong Test Report.
+Kỹ thuật	EP
+
+PAY-LOCAL-04 — Ticket không tồn tại khi confirm
+Mục	Nội dung
+Hàm kiểm thử	PaymentServiceImpl.confirmLocalPayment(Long ticketId)
+Điều kiện tiên quyết / Mocks	Payment tồn tại (PENDING)
+ticketService.confirmTicketPayment(5) ném ResourceNotFoundException
+Dữ liệu đầu vào	ticketId = 5
+Các bước thực hiện	1. Gọi confirmLocalPayment(5) và bắt exception.
+2. Verify paymentRepository.save đã được gọi trước khi lỗi xảy ra.
+Kết quả mong đợi	•ResourceNotFoundException được truyền ra.
+•paymentRepository.save đã được gọi với payment SUCCESS trước lời gọi ticketService (trong test đơn vị với mock, không có rollback).
+•Việc kiểm tra rollback giao dịch (@Transactional) cần integration test.
+Kỹ thuật	DT (D3)
+
+PAY-LOCAL-05 — Payment có transactionId null
+Mục	Nội dung
+Hàm kiểm thử	PaymentServiceImpl.confirmLocalPayment(Long ticketId)
+Điều kiện tiên quyết / Mocks	Payment tồn tại với transactionId = null; ticket service thành công
+Dữ liệu đầu vào	ticketId = 5
+Các bước thực hiện	1. Gọi confirmLocalPayment(5).
+2. Kiểm tra transactionId trong response.
+Kết quả mong đợi	Response có transactionId = null — service không tự sinh mã giao dịch mới; status vẫn SUCCESS.
+Kỹ thuật	EP
+
+3.8. TicketServiceImpl.cancelTicket — nhóm TICKET-CANCEL (8 TC)
+Mô tả logic: Tìm ticket → nếu ticket.user khác user hiện tại thì từ chối → từ chối nếu đã CANCELLED → yêu cầu showtime/startTime tồn tại → deadline = now + 2 giờ; nếu deadline.isAfter(startTime) thì từ chối → ngược lại set ticket CANCELLED, chuyển các ghế về AVAILABLE, set cancelledAt, lưu.
+Mocks chung: TicketRepository, ShowTimeSeatRepository (save/saveAll), TicketSeat của ticket.
+TICKET-CANCEL-01 — Hủy vé đúng hạn
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.cancelTicket(ticketId, currentUser)
+Điều kiện tiên quyết / Mocks	Ticket tồn tại, thuộc currentUser, status PENDING
+Showtime startTime = now + 1 ngày (xa hơn 2 giờ)
+Ticket có 2 TicketSeat, mỗi seat đang RESERVED
+Dữ liệu đầu vào	ticketId = 5; currentUser = chủ vé
+Các bước thực hiện	1. Gọi cancelTicket(5, user).
+2. Kiểm tra ticket, seat, cancelledAt, và các lần save.
+Kết quả mong đợi	•Ticket status = CANCELLED.
+•Các ShowTimeSeat chuyển AVAILABLE và được lưu.
+•cancelledAt có giá trị (≠ null).
+•Ticket được lưu.
+Kỹ thuật	EP
+
+TICKET-CANCEL-02 — Ticket không tồn tại
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.cancelTicket(ticketId, currentUser)
+Điều kiện tiên quyết / Mocks	ticketRepository.findById(999) → Optional.empty()
+Dữ liệu đầu vào	ticketId = 999; currentUser hợp lệ
+Các bước thực hiện	1. Gọi cancelTicket(999, user) và bắt exception.
+Kết quả mong đợi	•Ném ResourceNotFoundException.
+•Không lưu ticket/seat.
+•(HTTP: 404.)
+Kỹ thuật	EP
+
+TICKET-CANCEL-03 — Sai quyền sở hữu
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.cancelTicket(ticketId, currentUser)
+Điều kiện tiên quyết / Mocks	Ticket thuộc user id = 1; currentUser.id = 2
+Dữ liệu đầu vào	ticketId = 5; currentUser (id = 2)
+Các bước thực hiện	1. Gọi cancelTicket(5, userKhac) và bắt exception.
+2. Verify không save/nhả ghế.
+Kết quả mong đợi	•Ném IllegalArgumentException.
+•ticketRepository.save, showTimeSeatRepository.save/saveAll verify never.
+•(HTTP hiện tại: 400.)
+Kỹ thuật	EP, DT (D3)
+
+TICKET-CANCEL-04 — currentUser null [Current Behavior]
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.cancelTicket(ticketId, currentUser)
+Điều kiện tiên quyết / Mocks	Ticket tồn tại và có user (ticket.user ≠ null)
+Dữ liệu đầu vào	ticketId = 5; currentUser = null
+Các bước thực hiện	1. Gọi cancelTicket(5, null) và bắt exception.
+Kết quả mong đợi	•Phát sinh NullPointerException tại user.getId(); không có guard rõ ràng.
+•Không có ticket nào bị hủy hay lưu.
+•Ghi nhận như một điểm yếu về kiểm soát quyền (authorization) trong Test Report.
+Kỹ thuật	EP
+
+TICKET-CANCEL-05 — Vé đã hủy
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.cancelTicket(ticketId, currentUser)
+Điều kiện tiên quyết / Mocks	Ticket thuộc user hiện tại, status = CANCELLED
+Dữ liệu đầu vào	ticketId = 5; currentUser = chủ vé
+Các bước thực hiện	1. Gọi cancelTicket(5, user) và bắt exception.
+Kết quả mong đợi	•Ném IllegalStateException.
+•Không lưu thay đổi.
+•(HTTP: 400 qua handler RuntimeException.)
+Kỹ thuật	EP, DT (D4)
+
+TICKET-CANCEL-06 — Thiếu showtime hoặc startTime
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.cancelTicket(ticketId, currentUser)
+Điều kiện tiên quyết / Mocks	Ticket thuộc user, chưa hủy. Case (a): ticket.showTime = null. Case (b): showtime có startTime = null.
+Dữ liệu đầu vào	ticketId = 5; currentUser = chủ vé
+Các bước thực hiện	1. Chạy case (a), bắt exception.
+2. Chạy case (b), bắt exception.
+Kết quả mong đợi	•Cả hai case ném ResourceNotFoundException.
+•Không lưu thay đổi.
+•(HTTP: 404.)
+Kỹ thuật	EP, DT (D5)
+
+TICKET-CANCEL-07 — Biên mốc 2 giờ trước giờ chiếu
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.cancelTicket(ticketId, currentUser)
+Điều kiện tiên quyết / Mocks	Ticket thuộc user, chưa hủy, có ghế RESERVED. Code dùng now() trực tiếp (không có Clock) → dùng khoảng đệm ±5 phút quanh mốc 2 giờ.
+Dữ liệu đầu vào	(a) startTime = now + 2h05m (biên + : còn dư)
+(b) startTime = now + 1h55m (biên − : quá gần)
+(c) startTime = now + 2h (đúng biên — chỉ ghi nhận, không assert cứng)
+Các bước thực hiện	1. Chạy lần lượt (a), (b), (c).
+2. Ghi nhận kết quả/exception.
+Kết quả mong đợi	•(a) Hủy thành công (ticket CANCELLED, ghế AVAILABLE).
+•(b) Ném IllegalStateException (vì deadline = now + 2h sau startTime); không lưu gì.
+•(c) Kết quả phụ thuộc thời điểm chạy do phép so sánh deadline.isAfter(startTime); không đưa vào assert tự động cho đến khi có Clock inject.
+Kỹ thuật	BVA, DT (D6)
+
+TICKET-CANCEL-08 — TicketSeat null/rỗng hoặc ShowTimeSeat null
+Mục	Nội dung
+Hàm kiểm thử	TicketServiceImpl.cancelTicket(ticketId, currentUser)
+Điều kiện tiên quyết / Mocks	Ticket hợp lệ, showtime xa hơn 2 giờ. Các case: (a) ticket.ticketSeats = null; (b) danh sách rỗng; (c) danh sách có 2 phần tử, trong đó 1 TicketSeat có showTimeSeat = null, 1 phần tử có seat hợp lệ.
+Dữ liệu đầu vào	ticketId = 5; currentUser = chủ vé
+Các bước thực hiện	1. Chạy lần lượt (a), (b), (c).
+2. Verify các lần save.
+Kết quả mong đợi	•Cả 3 case: ticket vẫn được set CANCELLED và được lưu; không ném exception.
+•(a), (b): không lưu seat nào; saveAll không được gọi khi danh sách rỗng.
+•(c): chỉ lưu ShowTimeSeat khác null (chuyển AVAILABLE), bỏ qua phần tử null.
+Kỹ thuật	EP
+
+3.9. Room.createSeats và RoomServiceImpl.createRoom — nhóm ROOM (8 TC)
+Lưu ý: createSeats() là phương thức của entity `model.Room`, không thuộc RoomServiceImpl. Nó kiểm tra rows ∈ [1, 26], tạo rows × columns ghế đặt tên A1…, type STANDARD, gắn room. RoomServiceImpl.createRoom() kiểm tra columns ∈ [1, 50], rows ∈ [1, 26], lưu Room, gọi createSeats() rồi seatRepository.saveAll.
+Hạn chế đã biết: createSeats() không kiểm tra columns (columns ≤ 0 → danh sách rỗng). Việc kiểm tra columns thuộc tầng service.
+ROOM-01 — Tạo 1×1 ghế
+Mục	Nội dung
+Hàm kiểm thử	Room.createSeats()
+Điều kiện tiên quyết / Mocks	Entity Room thật (không mock)
+Dữ liệu đầu vào	rows = 1; columns = 1
+Các bước thực hiện	1. Dựng Room(rows=1, columns=1).
+2. Gọi createSeats().
+3. Kiểm tra danh sách ghế.
+Kết quả mong đợi	Danh sách có đúng 1 ghế tên A1, type STANDARD, seat.room trỏ về room đó.
+Kỹ thuật	BVA
+
+ROOM-02 — Tạo 26×50 ghế ở mức entity
+Mục	Nội dung
+Hàm kiểm thử	Room.createSeats()
+Điều kiện tiên quyết / Mocks	Entity Room thật
+Dữ liệu đầu vào	rows = 26; columns = 50
+Các bước thực hiện	1. Dựng Room(26, 50).
+2. Gọi createSeats().
+3. Kiểm tra số lượng và ghế đầu/cuối.
+Kết quả mong đợi	•Tổng 1300 ghế (26 × 50).
+•Ghế đầu là A1; ghế cuối là Z50 (hàng cuối là Z).
+•Entity không giới hạn columns (50 chỉ là giới hạn của service).
+Kỹ thuật	EP, BVA
+
+ROOM-03 — Rows bằng 0
+Mục	Nội dung
+Hàm kiểm thử	Room.createSeats()
+Điều kiện tiên quyết / Mocks	Entity Room thật
+Dữ liệu đầu vào	rows = 0; columns = 10
+Các bước thực hiện	1. Dựng Room(0, 10).
+2. Gọi createSeats() và bắt exception.
+Kết quả mong đợi	Ném IllegalArgumentException (message Number of row must be in 1 and 26).
+Kỹ thuật	BVA
+
+ROOM-04 — Rows âm
+Mục	Nội dung
+Hàm kiểm thử	Room.createSeats()
+Điều kiện tiên quyết / Mocks	Entity Room thật
+Dữ liệu đầu vào	rows = -1; columns = 10
+Các bước thực hiện	1. Dựng Room(-1, 10).
+2. Gọi createSeats() và bắt exception.
+Kết quả mong đợi	Ném IllegalArgumentException.
+Kỹ thuật	BVA
+
+ROOM-05 — Rows tại biên trên (26 và 27)
+Mục	Nội dung
+Hàm kiểm thử	Room.createSeats()
+Điều kiện tiên quyết / Mocks	Entity Room thật
+Dữ liệu đầu vào	(a) rows = 26, columns = 5; (b) rows = 27, columns = 5
+Các bước thực hiện	1. Chạy (a) và kiểm tra kết quả.
+2. Chạy (b) và bắt exception.
+Kết quả mong đợi	•(a) Hợp lệ: tạo 26 × 5 = 130 ghế, không exception.
+•(b) Ném IllegalArgumentException với message Number of row must be in 1 and 26.
+Kỹ thuật	BVA
+
+ROOM-06 — Columns bằng 0 hoặc âm ở entity [Known Limitation]
+Mục	Nội dung
+Hàm kiểm thử	Room.createSeats()
+Điều kiện tiên quyết / Mocks	Entity Room thật; rows hợp lệ
+Dữ liệu đầu vào	(a) rows = 5, columns = 0; (b) rows = 5, columns = -1
+Các bước thực hiện	1. Chạy (a), ghi nhận kết quả.
+2. Chạy (b), ghi nhận kết quả.
+Kết quả mong đợi (theo hành vi thực tế hiện tại)	[Known Limitation] Entity không kiểm tra columns:
+•Cả (a) và (b) không ném exception; createSeats() trả danh sách ghế rỗng (do vòng lặp cột dừng ngay vì length <= 0).
+•Không được kỳ vọng exception ở mức entity; việc chặn columns ≤ 0 chỉ có ở RoomServiceImpl (xem ROOM-07).
+Kỹ thuật	BVA, Gap test
+
+ROOM-07 — Service: columns ngoài biên
+Mục	Nội dung
+Hàm kiểm thử	RoomServiceImpl.createRoom(request)
+Điều kiện tiên quyết / Mocks	cinemaService.findCinemaById(1) → cinema hợp lệ; roomRepository, seatRepository được mock
+Dữ liệu đầu vào	(a) columns = 0; (b) columns = 51; rows = 5 (hợp lệ)
+Các bước thực hiện	1. Chạy (a), bắt exception.
+2. Chạy (b), bắt exception.
+3. Verify không lưu.
+Kết quả mong đợi	•Cả hai ném IllegalArgumentException (message thể hiện khoảng between 1 and 50).
+•roomRepository.save và seatRepository.saveAll verify never.
+•(Biên hợp lệ bổ sung: columns = 1 và 50 không bị chặn.)
+Kỹ thuật	BVA
+
+ROOM-08 — Service tạo phòng thành công
+Mục	Nội dung
+Hàm kiểm thử	RoomServiceImpl.createRoom(request)
+Điều kiện tiên quyết / Mocks	Cinema tồn tại; roomRepository.save(...) trả về room đã lưu
+Dữ liệu đầu vào	name = Room 1; rows = 4; columns = 5; cinemaId = 1
+Các bước thực hiện	1. Gọi createRoom(request).
+2. Bắt đối số của seatRepository.saveAll.
+3. Kiểm tra response.
+Kết quả mong đợi	•roomRepository.save gọi 1 lần.
+•seatRepository.saveAll nhận đúng 4 × 5 = 20 ghế.
+•Response chứa đúng kích thước (rows = 4, columns = 5) và thông tin phòng/rạp.
+Kỹ thuật	EP
+
+3.10. ShowTimeServiceImpl.createShowTime — nhóm SHOWTIME (6 TC)
+Mô tả logic: Tìm cinema, room, movie (thiếu cái nào → ResourceNotFoundException) → lưu ShowTime → lấy toàn bộ seat của room → tạo 1 ShowTimeSeat AVAILABLE cho mỗi seat → saveAll → map response.
+Hạn chế đã biết: Không kiểm tra xung đột thời gian suất chiếu (theo cinema/room/movie/thời lượng).
+Mocks chung: CinemaRepository, RoomRepository, MovieRepository, ShowTimeRepository, SeatRepository, ShowTimeSeatRepository.
+SHOWTIME-01 — Tạo suất chiếu hợp lệ
+Mục	Nội dung
+Hàm kiểm thử	ShowTimeServiceImpl.createShowTime(request)
+Điều kiện tiên quyết / Mocks	Cinema, room, movie tồn tại; seatRepository trả 3 seat của room (N = 3); showTimeRepository.save trả showtime đã lưu
+Dữ liệu đầu vào	cinemaId = 1; roomId = 2; movieId = 3; startTime = now + 1 ngày; price = 100000
+Các bước thực hiện	1. Gọi createShowTime(request).
+2. Bắt đối số saveAll của ShowTimeSeat.
+3. Kiểm tra response.
+Kết quả mong đợi	•showTimeRepository.save gọi 1 lần.
+•saveAll nhận đúng 3 ShowTimeSeat, mỗi cái status = AVAILABLE, gắn đúng showtime và seat.
+•Response map đúng thông tin (movie, room, cinema, startTime, price).
+Kỹ thuật	EP
+
+SHOWTIME-02 — Cinema không tồn tại
+Mục	Nội dung
+Hàm kiểm thử	ShowTimeServiceImpl.createShowTime(request)
+Điều kiện tiên quyết / Mocks	cinemaRepository.findById(99) → Optional.empty()
+Dữ liệu đầu vào	cinemaId = 99; roomId, movieId hợp lệ
+Các bước thực hiện	1. Gọi createShowTime(request) và bắt exception.
+Kết quả mong đợi	•Ném ResourceNotFoundException.
+•showTimeRepository.save verify never.
+•(HTTP: 404.)
+Kỹ thuật	EP, DT (D2)
+
+SHOWTIME-03 — Room không tồn tại
+Mục	Nội dung
+Hàm kiểm thử	ShowTimeServiceImpl.createShowTime(request)
+Điều kiện tiên quyết / Mocks	Cinema tồn tại; roomRepository.findById(99) → Optional.empty()
+Dữ liệu đầu vào	cinemaId = 1; roomId = 99; movieId = 3
+Các bước thực hiện	1. Gọi createShowTime(request) và bắt exception.
+Kết quả mong đợi	•Ném ResourceNotFoundException.
+•Không lưu showtime.
+•(HTTP: 404.)
+Kỹ thuật	EP, DT (D3)
+
+SHOWTIME-04 — Movie không tồn tại
+Mục	Nội dung
+Hàm kiểm thử	ShowTimeServiceImpl.createShowTime(request)
+Điều kiện tiên quyết / Mocks	Cinema và room tồn tại; movieRepository.findById(99) → Optional.empty()
+Dữ liệu đầu vào	cinemaId = 1; roomId = 2; movieId = 99
+Các bước thực hiện	1. Gọi createShowTime(request) và bắt exception.
+Kết quả mong đợi	•Ném ResourceNotFoundException.
+•Không lưu showtime.
+•(HTTP: 404.)
+Kỹ thuật	EP, DT (D4)
+
+SHOWTIME-05 — Room không có ghế
+Mục	Nội dung
+Hàm kiểm thử	ShowTimeServiceImpl.createShowTime(request)
+Điều kiện tiên quyết / Mocks	Cinema, room, movie tồn tại; seatRepository trả danh sách rỗng
+Dữ liệu đầu vào	Request hợp lệ
+Các bước thực hiện	1. Gọi createShowTime(request).
+2. Verify save và saveAll.
+Kết quả mong đợi	•Không ném exception (service không có guard cho danh sách rỗng).
+•showTimeRepository.save được gọi; showTimeSeatRepository.saveAll được gọi với danh sách rỗng.
+•Response vẫn được trả về.
+Kỹ thuật	EP
+
+SHOWTIME-06 — Hai suất chiếu overlap [Known Limitation]
+Mục	Nội dung
+Hàm kiểm thử	ShowTimeServiceImpl.createShowTime(request)
+Điều kiện tiên quyết / Mocks	Cinema, room, movie tồn tại; room có seat; mock showTimeRepository không có truy vấn kiểm tra xung đột (vì code không gọi)
+Dữ liệu đầu vào	Suất 1: room = 2, startTime = T
+Suất 2: cùng room = 2, startTime = T (trùng hoàn toàn) hoặc T + 30 phút (giao nhau)
+Các bước thực hiện	1. Gọi createShowTime(suất 1).
+2. Gọi createShowTime(suất 2) với thời gian trùng/giao nhau.
+3. Verify số lần save.
+Kết quả mong đợi (theo hành vi thực tế hiện tại)	[Known Limitation] Không có kiểm tra xung đột:
+•Cả hai lời gọi đều thành công, không ném exception.
+•showTimeRepository.save được gọi 2 lần; mỗi suất tạo đủ ShowTimeSeat.
+•Không được ghi expected là exception khi code chưa có logic; ghi nhận trong Test Report.
+Kỹ thuật	DT (D5), Gap test
+
+3.11. AuthServiceImpl.refreshToken — nhóm AUTH-REF (5 TC)
+Mô tả logic: Tìm RefreshToken theo raw token → không tìm thấy / revoked / expiresAt.isBefore(now) đều ném RuntimeException (token hết hạn thì set revoked = true và save trước khi ném) → hợp lệ thì dùng UserDetailsService để sinh access token mới và giữ nguyên refresh token trong response.
+Mocks chung: RefreshTokenRepository, UserDetailsService, JwtService.
+AUTH-REF-01 — Refresh hợp lệ
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.refreshToken(RefreshTokenRequest)
+Điều kiện tiên quyết / Mocks	refreshTokenRepository.findByToken("RT-1") → token (revoked = false, expiresAt = now + 1 ngày, gắn user)
+userDetailsService.loadUserByUsername(email) → userDetails
+jwtService.generateToken(userDetails) → "ACCESS_NEW"
+Dữ liệu đầu vào	refreshToken = RT-1
+Các bước thực hiện	1. Gọi refreshToken(request).
+2. Kiểm tra response và verify.
+Kết quả mong đợi	•generateToken được gọi 1 lần.
+•Response: token = "ACCESS_NEW", refreshToken = "RT-1" (giữ nguyên), kèm đúng name/email/role.
+•Không save/revoke token cũ.
+Kỹ thuật	EP, DT (D4)
+
+AUTH-REF-02 — Token không tồn tại
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.refreshToken(RefreshTokenRequest)
+Điều kiện tiên quyết / Mocks	findByToken("unknown") → Optional.empty()
+Dữ liệu đầu vào	refreshToken = unknown
+Các bước thực hiện	1. Gọi refreshToken(request) và bắt exception.
+Kết quả mong đợi	•Ném RuntimeException message Refresh token not found or invalid.
+•Không sinh token.
+•(HTTP hiện tại: 400.)
+Kỹ thuật	EP, DT (D1)
+
+AUTH-REF-03 — Token đã bị revoke
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.refreshToken(RefreshTokenRequest)
+Điều kiện tiên quyết / Mocks	findByToken("RT-1") → token có revoked = true (expiresAt tương lai)
+Dữ liệu đầu vào	refreshToken = RT-1
+Các bước thực hiện	1. Gọi refreshToken(request) và bắt exception.
+2. Verify jwtService.
+Kết quả mong đợi	•Ném RuntimeException (message báo token đã bị revoke).
+•jwtService.generateToken verify never.
+•(HTTP: 400.)
+Kỹ thuật	EP, DT (D2)
+
+AUTH-REF-04 — Token hết hạn
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.refreshToken(RefreshTokenRequest)
+Điều kiện tiên quyết / Mocks	findByToken("RT-1") → token revoked = false, expiresAt = now − 1 giờ
+Dữ liệu đầu vào	refreshToken = RT-1
+Các bước thực hiện	1. Gọi refreshToken(request) và bắt exception.
+2. Bắt token được refreshTokenRepository.save.
+Kết quả mong đợi	•Token được set revoked = true và được lưu trước khi ném lỗi.
+•Ném RuntimeException (message báo token đã hết hạn).
+•jwtService.generateToken verify never.
+Kỹ thuật	BVA, DT (D3)
+
+AUTH-REF-05 — Token sát thời điểm hết hạn
+Mục	Nội dung
+Hàm kiểm thử	AuthServiceImpl.refreshToken(RefreshTokenRequest)
+Điều kiện tiên quyết / Mocks	Code không inject Clock → dùng fixture lệch đủ lớn so với now (ví dụ ±5 giây trở lên, tùy độ ổn định máy chạy)
+Dữ liệu đầu vào	(a) expiresAt = now + 5s (chưa hết hạn)
+(b) expiresAt = now − 5s (đã hết hạn)
+Các bước thực hiện	1. Chạy (a) ngay sau khi dựng fixture.
+2. Chạy (b).
+Kết quả mong đợi	•(a) Refresh thành công như AUTH-REF-01.
+•(b) Như AUTH-REF-04 (revoke + save + RuntimeException).
+•Tại đúng instant expiresAt == now, kết quả phụ thuộc phép isBefore; không assert cứng cho đến khi có Clock.
+Kỹ thuật	BVA
+
+3.12. TicketCleanupServiceImpl.releaseExpiredTickets — nhóm CLEAN (6 TC)
+Mô tả logic: Chạy theo lịch fixedRate = 60000 ms. Tìm ticket PENDING có createdAt trước now − 15 phút; nếu danh sách rỗng thì return sớm; ngược lại set ticket CANCELLED, đổi mọi ShowTimeSeat đang RESERVED về AVAILABLE, lưu seat và lưu ticket.
+Mocks chung: TicketRepository (truy vấn theo PENDING + createdAt trước ngưỡng), ShowTimeSeatRepository.
+CLEAN-01 — Không có vé hết hạn
+Mục	Nội dung
+Hàm kiểm thử	TicketCleanupServiceImpl.releaseExpiredTickets()
+Điều kiện tiên quyết / Mocks	Truy vấn ticket hết hạn → danh sách rỗng
+Dữ liệu đầu vào	Không có tham số
+Các bước thực hiện	1. Gọi releaseExpiredTickets().
+2. Verify các thao tác save.
+Kết quả mong đợi	Return sớm; ticketRepository.save, showTimeSeatRepository.save verify never.
+Kỹ thuật	EP
+
+CLEAN-02 — Hủy một vé hết hạn có ghế RESERVED
+Mục	Nội dung
+Hàm kiểm thử	TicketCleanupServiceImpl.releaseExpiredTickets()
+Điều kiện tiên quyết / Mocks	Truy vấn trả 1 ticket PENDING, createdAt = now − 20 phút, có 1 TicketSeat → ShowTimeSeat RESERVED
+Dữ liệu đầu vào	1 ticket / 1 seat như trên
+Các bước thực hiện	1. Gọi releaseExpiredTickets().
+2. Kiểm tra trạng thái ticket/seat và các lần save.
+Kết quả mong đợi	•Ticket → CANCELLED; seat → AVAILABLE.
+•Seat được lưu 1 lần; ticket được lưu 1 lần.
+Kỹ thuật	EP
+
+CLEAN-03 — Nhiều vé hết hạn
+Mục	Nội dung
+Hàm kiểm thử	TicketCleanupServiceImpl.releaseExpiredTickets()
+Điều kiện tiên quyết / Mocks	Truy vấn trả 3 ticket hết hạn; mỗi ticket có 1–2 TicketSeat với seat RESERVED
+Dữ liệu đầu vào	Danh sách 3 ticket
+Các bước thực hiện	1. Gọi releaseExpiredTickets().
+2. Đếm số lần save ticket/seat.
+Kết quả mong đợi	•Cả 3 ticket → CANCELLED và được lưu (3 lần).
+•Toàn bộ seat RESERVED → AVAILABLE và được lưu đủ số lượng.
+Kỹ thuật	EP
+
+CLEAN-04 — Ghế không ở trạng thái RESERVED
+Mục	Nội dung
+Hàm kiểm thử	TicketCleanupServiceImpl.releaseExpiredTickets()
+Điều kiện tiên quyết / Mocks	1 ticket hết hạn; seat có status AVAILABLE (lặp thêm với BOOKED)
+Dữ liệu đầu vào	Ticket với seat AVAILABLE/BOOKED
+Các bước thực hiện	1. Gọi releaseExpiredTickets().
+2. Verify save seat và ticket.
+Kết quả mong đợi	•Ticket vẫn → CANCELLED và được lưu.
+•Seat không bị đổi trạng thái và không được lưu (điều kiện equals(RESERVED) không thỏa).
+Kỹ thuật	EP
+
+CLEAN-05 — TicketSeat / ShowTimeSeat null
+Mục	Nội dung
+Hàm kiểm thử	TicketCleanupServiceImpl.releaseExpiredTickets()
+Điều kiện tiên quyết / Mocks	Case (a): ticket có ticketSeats = null. Case (b): ticket có 1 TicketSeat mà showTimeSeat = null.
+Dữ liệu đầu vào	Ticket hết hạn với quan hệ null như trên
+Các bước thực hiện	1. Chạy (a) và (b).
+2. Verify không có lỗi và các lần save.
+Kết quả mong đợi	•Không ném exception (có null-guard).
+•Ticket vẫn → CANCELLED và được lưu; không lưu seat nào.
+Kỹ thuật	EP
+
+CLEAN-06 — Ngưỡng 15 phút
+Mục	Nội dung
+Hàm kiểm thử	TicketCleanupServiceImpl.releaseExpiredTickets()
+Điều kiện tiên quyết / Mocks	Repository mock trả danh sách bất kỳ (ví dụ rỗng). Do không có Clock, test kiểm tra tham số truy vấn, không kiểm tra boundary tuyệt đối theo mili-giây.
+Dữ liệu đầu vào	Ngưỡng lý thuyết: 14:59:59 (không bị bắt), 15:00:00 (đúng biên), 15:00:01 (bị bắt) — thể hiện qua tham số truy vấn
+Các bước thực hiện	1. Ghi nhận t0 = now trước khi gọi.
+2. Gọi releaseExpiredTickets(); ghi nhận t1.
+3. Dùng ArgumentCaptor bắt tham số trạng thái và thời điểm của truy vấn.
+Kết quả mong đợi	•Truy vấn được gọi với status PENDING và mốc thời gian createdAt-trước ≈ now − 15 phút (nằm trong [t0 − 15m, t1 − 15m]).
+•Do truy vấn dùng so sánh "Before" (nghiêm ngặt), ticket đúng 15:00:00 không thuộc phạm vi; việc xác nhận tuyệt đối cần Clock inject.
+Kỹ thuật	BVA
+
+3.13. GlobalExceptionHandler — nhóm EXC (8 TC)
+Mô tả logic: Ánh xạ exception → HTTP: validation 400; bad credentials 401; access denied 403; type mismatch 400; not found 404; already exists 409; RuntimeException 400; Exception khác 500. Response dạng ApiResponse với data = null (riêng validation: data là Map field→message).
+Mocks chung: Các exception được dựng/mocks trực tiếp; gọi trực tiếp phương thức handler (không cần Spring context).
+EXC-01 — Validation một field
+Mục	Nội dung
+Hàm kiểm thử	GlobalExceptionHandler.handleValidationException(MethodArgumentNotValidException)
+Điều kiện tiên quyết / Mocks	Mock MethodArgumentNotValidException; getBindingResult().getFieldErrors() → 1 FieldError
+Dữ liệu đầu vào	field = email; message = Email không hợp lệ
+Các bước thực hiện	1. Gọi handler.
+2. Kiểm tra status và body.
+Kết quả mong đợi	•HTTP 400.
+•Message Dữ liệu đầu vào không hợp lệ.
+•data là Map chứa email → "Email không hợp lệ".
+Kỹ thuật	EP
+
+EXC-02 — Validation nhiều field / trùng field
+Mục	Nội dung
+Hàm kiểm thử	GlobalExceptionHandler.handleValidationException(MethodArgumentNotValidException)
+Điều kiện tiên quyết / Mocks	getFieldErrors() trả nhiều FieldError
+Dữ liệu đầu vào	(a) email → "Sai định dạng", password → "Quá ngắn"
+(b) hai lỗi cùng field email: "Lỗi A" rồi "Lỗi B"
+Các bước thực hiện	1. Chạy (a) và (b).
+2. Kiểm tra Map data.
+Kết quả mong đợi	•(a) Map chứa đủ 2 key email, password với message tương ứng.
+•(b) Map chỉ có 1 key email, giá trị là lỗi cuối cùng "Lỗi B" (ghi đè theo HashMap.put).
+•HTTP 400.
+Kỹ thuật	EP
+
+EXC-03 — Bad credentials
+Mục	Nội dung
+Hàm kiểm thử	GlobalExceptionHandler.handleBadCredentials(BadCredentialsException)
+Điều kiện tiên quyết / Mocks	Không cần mock
+Dữ liệu đầu vào	new BadCredentialsException("bad")
+Các bước thực hiện	1. Gọi handler.
+2. Kiểm tra status và body.
+Kết quả mong đợi	•HTTP 401.
+•Message cố định về đăng nhập sai (so khớp đúng chuỗi trong code), không dùng message của exception.
+•data = null.
+Kỹ thuật	EP
+
+EXC-04 — Access denied
+Mục	Nội dung
+Hàm kiểm thử	GlobalExceptionHandler.handleAccessDenied(AccessDeniedException)
+Điều kiện tiên quyết / Mocks	Không cần mock
+Dữ liệu đầu vào	new AccessDeniedException("denied")
+Các bước thực hiện	1. Gọi handler.
+2. Kiểm tra status và body.
+Kết quả mong đợi	•HTTP 403.
+•Message cố định về quyền truy cập (so khớp đúng chuỗi trong code).
+•data = null.
+Kỹ thuật	EP
+
+EXC-05 — Type mismatch
+Mục	Nội dung
+Hàm kiểm thử	GlobalExceptionHandler.handleTypeMismatch(MethodArgumentTypeMismatchException)
+Điều kiện tiên quyết / Mocks	Mock exception: getName() → "id", getValue() → "abc"
+Dữ liệu đầu vào	name = id; value = abc
+Các bước thực hiện	1. Gọi handler.
+2. Kiểm tra message.
+Kết quả mong đợi	•HTTP 400.
+•Message chứa đúng tên tham số id và giá trị abc.
+•data = null.
+Kỹ thuật	EP
+
+EXC-06 — Not found và Already exists
+Mục	Nội dung
+Hàm kiểm thử	GlobalExceptionHandler.handleResourceNotFound(...), handleResourceAlreadyExist(...)
+Điều kiện tiên quyết / Mocks	Không cần mock
+Dữ liệu đầu vào	(a) new ResourceNotFoundException("Movie not found")
+(b) new ResourceAlreadyExistException("Email already exists")
+Các bước thực hiện	1. Gọi từng handler.
+2. Kiểm tra status và message.
+Kết quả mong đợi	•(a) HTTP 404, message giữ nguyên Movie not found.
+•(b) HTTP 409, message giữ nguyên Email already exists.
+•data = null ở cả hai.
+Kỹ thuật	EP
+
+EXC-07 — RuntimeException
+Mục	Nội dung
+Hàm kiểm thử	GlobalExceptionHandler.handleRuntimeException(RuntimeException)
+Điều kiện tiên quyết / Mocks	Không cần mock
+Dữ liệu đầu vào	(a) new RuntimeException("Business error"); (b) new RuntimeException((String) null)
+Các bước thực hiện	1. Chạy (a) và (b).
+2. Kiểm tra status và message.
+Kết quả mong đợi	•HTTP 400 cho cả hai.
+•(a) message giữ nguyên Business error.
+•(b) message giữ nguyên là null (không thay thế).
+•data = null.
+Kỹ thuật	EP
+
+EXC-08 — Exception ngoài dự kiến
+Mục	Nội dung
+Hàm kiểm thử	GlobalExceptionHandler.handleException(Exception)
+Điều kiện tiên quyết / Mocks	Không cần mock
+Dữ liệu đầu vào	new Exception("Unexpected failure")
+Các bước thực hiện	1. Gọi handler.
+2. Kiểm tra status và message.
+Kết quả mong đợi	•HTTP 500.
+•Message dạng Lỗi hệ thống: Unexpected failure.
+•data = null.
+Kỹ thuật	EP
+
+4. Known Limitations (Hạn chế đã biết — quyết định giữ nguyên)
+#	Hạn chế	Vị trí	Test case liên quan	Quyết định của nhóm
+1	Room.createSeats() không kiểm tra columns ≤ 0	model/Room.java	ROOM-06	Giữ nguyên, ghi nhận trong Test Report
+2	ShowTimeServiceImpl chưa kiểm tra xung đột suất chiếu trùng giờ	ShowTimeServiceImpl.java	SHOWTIME-06	Giữ nguyên, ghi nhận trong Test Report
+3	PaymentServiceImpl.confirmLocalPayment chưa có idempotency guard	PaymentServiceImpl.java	PAY-LOCAL-03	Giữ nguyên, ghi nhận trong Test Report
+4	TicketServiceImpl.createTicket không chặn danh sách ghế rỗng/trùng ID	TicketServiceImpl.java	TICKET-BOOK-10	Giữ nguyên, ghi nhận trong Test Report
+
+Bốn test case trên mô tả đúng hành vi hiện tại của code, không phải hành vi mong muốn. Nhóm xác nhận đây là giới hạn đã biết của phiên bản hiện tại, không coi là lỗi cần sửa trong phạm vi đồ án.
+4.1. Các test ghi nhận hành vi hiện tại khác (không thuộc 4 Known Limitation)
+Test case	Hành vi hiện tại được ghi nhận
+AUTH-REG-04	Password null → NullPointerException tại password.equals(...) (không có null-guard trong service)
+AUTH-LOGIN-04	Role null → NullPointerException tại user.getRole().name()
+TICKET-CANCEL-04	currentUser null → NullPointerException tại user.getId()
+
+5. Ghi chú về tính ổn định của test (flaky)
+Nhóm test	Nguyên nhân	Cách xử lý trong tài liệu này
+TICKET-BOOK-05, TICKET-CANCEL-07, AUTH-REF-05, CLEAN-06	Code dùng LocalDateTime.now() trực tiếp, chưa inject Clock	Dùng khoảng đệm thời gian đủ lớn; không assert tại đúng instant biên
+AUTH-OTP-03	Code dùng new Random() trực tiếp, không thể ép OTP 100000/999999	Kiểm tra tính chất (6 chữ số, trong khoảng) qua nhiều lần chạy
+JWT-05	Phụ thuộc thời gian thực	Dùng expiration âm/quá khứ thay vì chờ
+PAY-LOCAL-04	Mock không mô phỏng rollback giao dịch	Cần integration test riêng nếu muốn kiểm tra rollback
+
+6. Tổng kết
+Chỉ tiêu	Giá trị
+Tổng số test case	90
+Số nhóm chức năng	13
+Test case Known Limitation	4 (ROOM-06, SHOWTIME-06, PAY-LOCAL-03, TICKET-BOOK-10)
+Test case ghi nhận hành vi hiện tại khác	3 (AUTH-REG-04, AUTH-LOGIN-04, TICKET-CANCEL-04)
+Kỹ thuật áp dụng	Equivalence Partitioning, Boundary Value Analysis, Decision Table, Gap test
+
+
+PHẦN BỔ SUNG - ĐỐI CHIẾU KIỂM THỬ HỘP TRẮNG
+Phụ lục này được lập từ mã nguồn thật trong backend/src/main/java. Nội dung 90 test case hiện có được giữ nguyên. Các ánh xạ là kế hoạch; Coverage thực tế chỉ xác định sau khi chạy JaCoCo.
+7. Phương pháp kiểm thử hộp trắng
+•Statement coverage: Mỗi câu lệnh có thể thực thi được chạy ít nhất một lần.
+•Branch coverage: Kiểm tra các hướng true/false của if/else, toán tử điều kiện và nhánh exception.
+•Condition coverage: Từng điều kiện thành phần trong điều kiện kết hợp nhận true và false khi khả thi.
+•Path coverage: Kiểm tra các đường đi độc lập/quan trọng trong CFG; đường đi không khả thi phải ghi rõ.
+•Cyclomatic complexity: Ước lượng số đường đi độc lập trong CFG; giá trị chính xác cần xác nhận bằng CFG/JaCoCo.
+8. Nhánh theo mã nguồn thật
+Nhóm	Class.method	Nhánh/exception/null/Optional/vòng lặp
+AUTH-REG	AuthServiceImpl.register(RegisterRequest)	Email Optional.of → ResourceAlreadyExistException; Optional.empty → tiếp tục; password mismatch → RuntimeException; khớp → encode/save/token.
+AUTH-LOGIN	AuthServiceImpl.login(LoginRequest)	Authentication success; user absent → ResourceNotFoundException; role null → NPE, Current Behavior.
+AUTH-OTP	AuthServiceImpl.forgotPassword/resetPassword	User absent/present; OTP Redis null/sai/đúng; ResourceNotFoundException/IllegalArgumentException.
+JWT	JwtService.extractUsername/extractClaim/generateToken/isTokenValid/isTokenExpired	Claims, expiration, username validation; exception JWT library cần xác nhận.
+TICKET-BOOK	TicketServiceImpl.createTicket(User, CreateTicketRequest)	Showtime/time/seat/status; ticketSeats null; anyMatch với cancelledAt == null; hai vòng lặp seat.
+REDIS	RedisServiceImpl.increment/set/get/exists/expire/delete	delta < 0 → IllegalArgumentException; result null → 0L.
+PAY-LOCAL	PaymentServiceImpl.confirmLocalPayment/createLocalPaymentUrl	Payment absent/present; PAY-LOCAL-03 thiếu idempotency guard SUCCESS.
+TICKET-CANCEL	TicketServiceImpl.cancelTicket(User)	Not found/ownership/currentUser null/CANCELLED/time/seats null-rỗng; loop hoàn ghế.
+ROOM	Room.createSeats; RoomServiceImpl.createRoom	Bounds columns/rows; cinema null; loop sinh ghế; ROOM-06 thiếu columns ≤ 0 guard.
+SHOWTIME	ShowTimeServiceImpl.createShowTime/filter	Lookups absent; loop roomSeats; page ternary; SHOWTIME-06 thiếu overlap guard.
+AUTH-REF	AuthServiceImpl.refreshToken	Absent/revoked/expired/valid.
+CLEAN	TicketCleanupServiceImpl.releaseExpiredTickets	Empty return; loop; ticketSeats null; showTimeSeat null/status RESERVED.
+EXC	GlobalExceptionHandler — 8 handler methods	8 loại exception; validation có loop FieldError; từng handler có status/body.
+
+9. Ma trận ánh xạ và nhãn coverage
+Các nhãn Statement/Branch/Condition/Path/Exception là nhãn bổ sung; EP/BVA/DT/Gap test hiện có giữ nguyên.
+Mã hiện có	Nhánh/câu lệnh	Coverage label	Ghi chú
+AUTH-REG-01..05	register success/existing/mismatch/null/refresh	Statement; Branch; Condition; Exception; Path	Theo kế hoạch
+AUTH-LOGIN-01..04	login success/fail/absent/role null	Statement; Branch; Exception; Path	role null Current Behavior
+AUTH-OTP-01..07	forgot/reset user và OTP	Statement; Branch; Condition; Exception; Path	Theo kế hoạch
+JWT-01..10	generate/extract/expiration/validity	Statement; Branch; Condition; Path	CHƯA CÓ parse exception; BS-JWT-01
+TICKET-BOOK-01..10	time/showtime/seat/status/booking/loop	Statement; Branch; Condition; Exception; Path	list rỗng/trùng CHƯA CÓ; Known Limitation
+REDIS-01..08	delegation/increment	Statement; Branch; Condition; Exception	BS-REDIS-01 nếu null result chưa có
+PAY-LOCAL-01..05	payment absent/present/confirm	Statement; Branch; Exception; Path	PAY-LOCAL-03 thiếu guard
+TICKET-CANCEL-01..08	ownership/status/time/null/loop	Statement; Branch; Condition; Exception; Path	currentUser null Current Behavior
+ROOM-01..08	bounds/cinema/loop	Statement; Branch; Condition; Exception; Path	ROOM-06 thiếu guard
+SHOWTIME-01..06	lookups/loop/page	Statement; Branch; Condition; Exception; Path	SHOWTIME-06 thiếu guard
+AUTH-REF-01..05	empty/revoked/expired/valid	Statement; Branch; Exception; Path	Theo kế hoạch
+CLEAN-01..06	empty/loop/null/status	Statement; Branch; Condition; Exception; Path	status khác RESERVED cần xác nhận; BS-CLEAN-01
+EXC-01..08	8 handler/validation loop	Statement; Branch; Path; Exception	Xác nhận từng status
+
+10. Test case bổ sung cho nhánh CHƯA CÓ
+Mã	Nhánh	Kỳ vọng	Coverage
+BS-JWT-01	Token JWT sai định dạng	Assert exception thực tế; loại exception cần xác nhận.	Branch; Exception; Path
+BS-REDIS-01	increment Redis trả null	Assert 0L.	Branch; Condition; Statement
+BS-CLEAN-01	status khác RESERVED	Không save ghế; vẫn save ticket.	Branch; Condition; Path
+BS-ROOM-01	columns ≤ 0	Ghi nhận hành vi source nếu không có guard.	Branch; Exception; Path
+BS-SHOWTIME-01	roomSeats rỗng	saveAll rỗng và trả response.	Branch; Path
+BS-EXC-01	nhiều FieldError	Phủ loop và map kết quả.	Statement; Branch; Path; Exception
+
+11. Tổng hợp coverage theo module
+Không bịa số liệu. Các số nhánh CFG chính xác cần xác nhận bằng công cụ. Coverage thực tế ghi Chờ chạy JaCoCo.
+Module	Số nhánh	Đã có test case	Còn thiếu	Coverage thực tế
+AUTH-REG	cần xác nhận	cần xác nhận mapping	cần xác nhận	Chờ chạy JaCoCo
+AUTH-LOGIN	cần xác nhận	cần xác nhận mapping	role null/exception cần xác nhận	Chờ chạy JaCoCo
+AUTH-OTP	cần xác nhận	cần xác nhận mapping	cần xác nhận	Chờ chạy JaCoCo
+JWT	cần xác nhận CFG/thư viện	cần xác nhận mapping	invalid token cần xác nhận	Chờ chạy JaCoCo
+TICKET-BOOK	cần xác nhận CFG + loop	cần xác nhận mapping	rỗng/trùng/loop cần xác nhận	Chờ chạy JaCoCo
+REDIS	cần xác nhận	cần xác nhận mapping	null result/delta cần xác nhận	Chờ chạy JaCoCo
+PAY-LOCAL	cần xác nhận	cần xác nhận mapping	idempotency guard thiếu	Chờ chạy JaCoCo
+TICKET-CANCEL	cần xác nhận CFG + loop	cần xác nhận mapping	null/time/ownership cần xác nhận	Chờ chạy JaCoCo
+ROOM	cần xác nhận CFG + loop	cần xác nhận mapping	columns guard thiếu	Chờ chạy JaCoCo
+SHOWTIME	cần xác nhận CFG + loop	cần xác nhận mapping	overlap guard thiếu	Chờ chạy JaCoCo
+AUTH-REF	cần xác nhận	cần xác nhận mapping	cần xác nhận	Chờ chạy JaCoCo
+CLEAN	cần xác nhận CFG + loop	cần xác nhận mapping	status khác RESERVED cần xác nhận	Chờ chạy JaCoCo
+EXC	8 handler + validation loop; CFG cần xác nhận	cần xác nhận mapping	cần xác nhận từng handler	Chờ chạy JaCoCo
+
+12. Known Limitation và Current Behavior
+•ROOM-06: Room.createSeats thiếu kiểm tra columns <= 0. Đây là Known Limitation vì guard thiếu đã được xác nhận chính thức.
+•SHOWTIME-06: createShowTime không kiểm tra suất chiếu trùng/giao. Đây là Known Limitation vì thiếu overlap branch trong source.
+•PAY-LOCAL-03: confirmLocalPayment không chặn payment SUCCESS. Đây là Known Limitation vì thiếu idempotency guard.
+•TICKET-BOOK-10: createTicket không chặn list ghế rỗng/trùng. Đây là Known Limitation vì thiếu validation/uniqueness guard.
+•AUTH-REG-04, AUTH-LOGIN-04, TICKET-CANCEL-04: các lỗi null tương ứng là Current Behavior, không thuộc 4 Known Limitation.
+13. Quy ước nhãn và nguồn
+Nhãn Statement/Branch/Condition/Path/Exception là mục tiêu kế hoạch; EP/BVA/DT/Gap test giữ nguyên. Nguồn: AuthServiceImpl.java, TicketServiceImpl.java, RedisServiceImpl.java, PaymentServiceImpl.java, RoomServiceImpl.java/model/Room.java, ShowTimeServiceImpl.java, JwtService.java, TicketCleanupServiceImpl.java, GlobalExceptionHandler.java dưới backend/src/main/java/com/movieticketbooking. Mục “cần xác nhận” phải kiểm chứng bằng test/CFG/JaCoCo.
