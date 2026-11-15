@@ -25,12 +25,14 @@ public class ShowTimeSeat {
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
 
-	@OneToOne(cascade = CascadeType.ALL)
+	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "seat_id")
 	private Seat seat;
+
 	@OneToMany(mappedBy = "showTimeSeat")
 	private List<TicketSeat> ticketSeats = new ArrayList<>();
-	@ManyToOne(cascade = CascadeType.ALL)
+
+	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "showtime_id")
 	private ShowTime showTime;
 }

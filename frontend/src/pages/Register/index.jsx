@@ -66,8 +66,21 @@ export default function Register() {
       }
     } catch (err) {
       console.error('Lỗi đăng ký:', err);
-      setErrorMessage(err.data || err.message || 'Đăng ký thất bại!');
-      toast.error(err.data || err.message || 'Đăng ký thất bại!');
+      let msg = 'Đăng ký thất bại!';
+
+      if (err?.data) {
+        if (typeof err.data === 'string') {
+          msg = err.data;
+        } else if (typeof err.data === 'object') {
+          // Nếu Backend trả về object dạng { password: "...", email: "..." }, nối các thông báo lỗi lại thành chuỗi
+          msg = Object.values(err.data).join(' | ');
+        }
+      } else if (err?.message) {
+        msg = err.message;
+      }
+
+      setErrorMessage(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
