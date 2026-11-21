@@ -255,7 +255,7 @@ class TicketServiceImplCancelTicketTest {
     }
 
     @Test
-    @DisplayName("TICKET-CANCEL-08 - TicketSeat có showTimeSeat null")
+    @DisplayName("TICKET-CANCEL-08(c) - VI-03 NPE và trạng thái dữ liệu không nhất quán")
     void TICKET_CANCEL_08_c_nullShowTimeSeat() {
         User user = user(1);
         ShowTimeSeat validSeat = showTimeSeat(11, "A2", SeatStatus.RESERVED);

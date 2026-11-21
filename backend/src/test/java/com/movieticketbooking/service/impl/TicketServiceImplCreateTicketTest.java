@@ -254,23 +254,20 @@ class TicketServiceImplCreateTicketTest {
     }
 
     @Test
-    @DisplayName("TICKET-BOOK-10 - Danh sách ghế rỗng - Known Limitation")
+    @DisplayName("TICKET-BOOK-10(a) - Từ chối danh sách ghế rỗng theo UC3.2")
     void TICKET_BOOK_10_a_emptyList() {
         ShowTime showTime = showTime(1, LocalDateTime.now().plusDays(1));
         stubValidShowTime(showTime);
         stubSaves();
 
-        // Known Limitation: createTicket() không có guard cho danh sách ghế rỗng.
-        TicketResponse response = ticketService.createTicket(user(), request(1));
-
-        assertEquals(TicketStatus.PENDING, response.getStatus());
-        assertEquals(BigDecimal.ZERO, response.getTotalPrice());
-        assertTrue(response.getSeatNames().isEmpty());
-        verify(ticketSeatRepository).saveAll(List.of());
+        assertThrows(IllegalArgumentException.class,
+                () -> ticketService.createTicket(user(), request(1)));
+        verify(ticketRepository, never()).save(any(Ticket.class));
+        verify(ticketSeatRepository, never()).saveAll(any());
     }
 
     @Test
-    @DisplayName("TICKET-BOOK-10 - Trùng ID ghế - Known Limitation")
+    @DisplayName("TICKET-BOOK-10(b) - Ghi nhận trùng ID ghế - VI-02 kỹ thuật, không suy diễn vi phạm SRS")
     void TICKET_BOOK_10_b_duplicateIds() {
         ShowTime showTime = showTime(1, LocalDateTime.now().plusDays(1));
         stubValidShowTime(showTime);

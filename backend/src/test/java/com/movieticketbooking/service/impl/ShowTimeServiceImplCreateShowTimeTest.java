@@ -184,7 +184,7 @@ class ShowTimeServiceImplCreateShowTimeTest {
     }
 
     @Test
-    @DisplayName("SHOWTIME-06 - Trùng hoàn toàn thời gian - Known Limitation")
+    @DisplayName("SHOWTIME-06(a) - Từ chối suất chiếu trùng khung giờ theo EF11.1")
     void SHOWTIME_06_a_sameStartTime() {
         LocalDateTime startTime = future();
         Cinema cinema = cinema();
@@ -196,17 +196,18 @@ class ShowTimeServiceImplCreateShowTimeTest {
         when(showTimeRepository.save(any(ShowTime.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Known Limitation: thiếu kiểm tra xung đột thời gian suất chiếu.
         assertNotNull(showTimeService.createShowTime(request(1, 2, 3, startTime)));
-        assertNotNull(showTimeService.createShowTime(request(1, 2, 3, startTime)));
+        org.junit.jupiter.api.Assertions.assertThrows(
+                com.movieticketbooking.exception.ResourceAlreadyExistException.class,
+                () -> showTimeService.createShowTime(request(1, 2, 3, startTime)));
 
-        verify(showTimeRepository, org.mockito.Mockito.times(2)).save(any(ShowTime.class));
-        verify(showTimeSeatRepository, org.mockito.Mockito.times(2)).saveAll(any());
+        verify(showTimeRepository).save(any(ShowTime.class));
+        verify(showTimeSeatRepository).saveAll(any());
         verifyNoMoreInteractions(showTimeRepository);
     }
 
     @Test
-    @DisplayName("SHOWTIME-06 - Giao nhau 30 phút - Known Limitation")
+    @DisplayName("SHOWTIME-06(b) - Từ chối suất chiếu giao nhau theo EF11.1")
     void SHOWTIME_06_b_overlap30Minutes() {
         LocalDateTime firstStart = future();
         LocalDateTime secondStart = firstStart.plusMinutes(30);
@@ -219,12 +220,13 @@ class ShowTimeServiceImplCreateShowTimeTest {
         when(showTimeRepository.save(any(ShowTime.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Known Limitation: thiếu kiểm tra xung đột thời gian suất chiếu.
         assertNotNull(showTimeService.createShowTime(request(1, 2, 3, firstStart)));
-        assertNotNull(showTimeService.createShowTime(request(1, 2, 3, secondStart)));
+        org.junit.jupiter.api.Assertions.assertThrows(
+                com.movieticketbooking.exception.ResourceAlreadyExistException.class,
+                () -> showTimeService.createShowTime(request(1, 2, 3, secondStart)));
 
-        verify(showTimeRepository, org.mockito.Mockito.times(2)).save(any(ShowTime.class));
-        verify(showTimeSeatRepository, org.mockito.Mockito.times(2)).saveAll(any());
+        verify(showTimeRepository).save(any(ShowTime.class));
+        verify(showTimeSeatRepository).saveAll(any());
         verifyNoMoreInteractions(showTimeRepository);
     }
 

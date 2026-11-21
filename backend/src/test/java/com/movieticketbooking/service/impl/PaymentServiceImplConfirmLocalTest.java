@@ -56,7 +56,7 @@ class PaymentServiceImplConfirmLocalTest {
         ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository).save(paymentCaptor.capture());
         Payment savedPayment = paymentCaptor.getValue();
-        assertEquals(PaymentStatus.SUCCESS, savedPayment.getStatus());
+        assertEquals("COMPLETED", savedPayment.getStatus().name());
         assertNotNull(savedPayment.getPaidAt());
         assertNotNull(savedPayment.getUpdatedAt());
         verify(ticketService).confirmTicketPayment(5);
@@ -82,7 +82,7 @@ class PaymentServiceImplConfirmLocalTest {
     }
 
     @Test
-    @DisplayName("PAY-LOCAL-03 - Xác nhận lặp payment SUCCESS - Known Limitation")
+    @DisplayName("PAY-LOCAL-03 - Không tự suy diễn idempotency; ghi nhận hành vi SUCCESS lặp")
     void PAY_LOCAL_03_reconfirmsAlreadySuccessfulPayment() {
         LocalDateTime oldPaidAt = LocalDateTime.now().minusDays(1);
         Payment payment = payment(PaymentStatus.SUCCESS, "TXN-001");

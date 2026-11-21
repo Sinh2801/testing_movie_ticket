@@ -157,7 +157,7 @@ class TicketCleanupServiceImplTest {
     }
 
     @Test
-    @DisplayName("CLEAN-06 - Ngưỡng truy vấn 15 phút")
+    @DisplayName("CLEAN-06 - Ngưỡng TTL/PENDING 300 giây theo SRS")
     void CLEAN_06_queriesPendingTicketsBeforeFifteenMinutes() {
         when(ticketRepository.findByStatusAndCreatedAtBefore(
                 any(TicketStatus.class), any(LocalDateTime.class))).thenReturn(List.of());
@@ -175,8 +175,8 @@ class TicketCleanupServiceImplTest {
 
         LocalDateTime threshold = timeCaptor.getValue();
         assertEquals(TicketStatus.PENDING, statusCaptor.getValue());
-        assertFalse(threshold.isBefore(t0.minusMinutes(15)));
-        assertFalse(threshold.isAfter(t1.minusMinutes(15)));
+        assertFalse(threshold.isBefore(t0.minusSeconds(300)));
+        assertFalse(threshold.isAfter(t1.minusSeconds(300)));
 
         // Truy vấn dùng Before nghiêm ngặt; xác nhận chính xác tại biên cần inject Clock.
         verify(ticketRepository, never()).save(any(Ticket.class));
